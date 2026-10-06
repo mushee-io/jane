@@ -419,9 +419,36 @@ export function createApiHandler() {
       }
 
       if (request.method === "POST" && path === "/api/research") {
-        const body = await parseBody(request) as JaneRequest & { query?: string };
+        const body = await parseBody(request) as JaneRequest & { query?: string; synthesize?: boolean };
         const input = requestContext(request, janeRequestSchema.parse(body));
-        return json(await research.research({ ...input, query: body.query }));
+        const result = await research.research({ ...input, query: body.query });
+        if (body.synthesize === false || result.sources.length === 0) return json(result);
+
+        try {
+          const sourceContext = result.sources.map((source, index) =>
+            `[${index + 1}] ${source.title}\n${source.url}\n${source.snippet ?? ""}`
+          ).join("\n\n");
+          const synthesis = await jane.chat({
+            ...input,
+            messages: [
+              {
+                role: "system",
+                content: "You are 33jane Research. Synthesize only from the supplied public sources. Cite source numbers like [1]. Do not infer private data that is not in the sanitized query."
+              },
+              {
+                role: "user",
+                content: `Question:\n${result.query}\n\nPublic sources:\n${sourceContext}`
+              }
+            ]
+          });
+          return json({ ...result, answer: synthesis.answer, synthesisRoute: synthesis.route });
+        } catch (error) {
+          return json({
+            ...result,
+            answer: null,
+            synthesisError: error instanceof Error ? error.message : "RESEARCH_SYNTHESIS_FAILED"
+          });
+        }
       }
 
       if (request.method === "GET" && path === "/api/characters") {
@@ -434,6 +461,25 @@ export function createApiHandler() {
         const body = await parseBody(request) as Omit<JaneCharacter, "id"|"createdAt"> & { id?: string };
         if (!body?.name || !body?.systemPrompt) return json({ error: "NAME_AND_SYSTEM_PROMPT_REQUIRED" }, 400);
         return json({ character: characters.upsert(body) }, 201);
+      }
+
+      if (request.method === "POST" && /^\/api\/characters\/[^/]+\/chat$/.test(path)) {
+        const characterId = path.split("/")[3] ?? "";
+        const character = characters.get(characterId);
+        if (!character) return json({ error: "CHARACTER_NOT_FOUND" }, 404);
+        const body = await parseBody(request) as JaneRequest;
+        const parsed = requestContext(request, janeRequestSchema.parse({
+          ...body,
+          mode: body.mode ?? character.defaultMode
+        }));
+        return json(await jane.chat({
+          ...parsed,
+          mode: parsed.mode ?? character.defaultMode,
+          messages: [
+            { role: "system", content: character.systemPrompt },
+            ...parsed.messages
+          ]
+        }));
       }
 
       if (request.method === "POST" && path === "/api/arena") {
