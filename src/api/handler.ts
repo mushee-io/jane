@@ -29,6 +29,7 @@ import { JaneResearchService } from "../research/service.js";
 import { JaneCharacterRegistry, type JaneCharacter } from "../characters/service.js";
 import { JaneArenaService, type ArenaRequest } from "../arena/service.js";
 import { ConfidentialComputeService, type AttestationDocument } from "../confidential/attestation.js";
+import { ConfidentialGateway, type EncryptedInferenceEnvelope } from "../confidential/gateway.js";
 import { TeamService, type JaneTeam, type TeamMember } from "../teams/service.js";
 import type { Hex } from "viem";
 
@@ -116,6 +117,7 @@ export function createApiHandler() {
   const characters = new JaneCharacterRegistry();
   const arena = new JaneArenaService();
   const confidential = new ConfidentialComputeService();
+  const confidentialGateway = new ConfidentialGateway();
   const teams = new TeamService();
 
   return async function handle(request: Request): Promise<Response> {
@@ -456,7 +458,27 @@ export function createApiHandler() {
       }
 
       if (request.method === "GET" && path === "/api/confidential/envelope") {
-        return json(confidential.clientEnvelope());
+        const attestation = await confidential.fetchAttestation();
+        const verification = confidential.verify(attestation);
+        if (!verification.valid) return json({ error: "ENCLAVE_ATTESTATION_NOT_VERIFIED", verification }, 503);
+        return json({
+          ...confidential.clientEnvelope(),
+          attestationFingerprint: verification.fingerprint,
+          enclaveId: verification.enclaveId,
+          provider: verification.provider
+        });
+      }
+
+      if (request.method === "GET" && path === "/api/confidential/gateway/status") {
+        return json(confidentialGateway.status());
+      }
+
+      if (request.method === "POST" && path === "/api/confidential/infer") {
+        const body = await parseBody(request) as EncryptedInferenceEnvelope;
+        if (!body?.ciphertext || !body?.encryptedKey || !body?.iv || !body?.attestationFingerprint) {
+          return json({ error: "ENCRYPTED_ENVELOPE_REQUIRED" }, 400);
+        }
+        return json(await confidentialGateway.infer(body));
       }
 
       if (request.method === "GET" && path === "/api/teams") {
