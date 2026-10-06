@@ -220,6 +220,26 @@ export function createApiHandler() {
           },
           network: health.providerNetwork,
           enterpriseOrganizations: health.enterprise.organizations,
+          catalog: catalogSummary(),
+          creator: {
+            configuredModels: media.list().filter((model) => model.configured).length,
+            modalities: [...new Set(media.list().filter((model) => model.configured).map((model) => model.modality))]
+          },
+          research: research.status(),
+          voice: voice.status(),
+          confidential: {
+            ...confidential.status(),
+            gateway: confidentialGateway.status()
+          },
+          teams: { count: teams.list().length },
+          developer: {
+            openAICompatibleApi: true,
+            javascriptSdk: true,
+            pythonSdk: true,
+            cli: true,
+            mcp: true,
+            pwa: true
+          },
           token: {
             optional: true,
             configured: token.configured,
