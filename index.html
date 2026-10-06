@@ -100,6 +100,7 @@
     <div class="brand"><div class="brandmark"><span class="dot"></span>33jane</div><span class="beta">ALPHA</span></div>
     <button class="new-chat" id="newChat">＋ New intelligence session</button>
     <button class="vault-button" id="vaultButton">◇ 33jane Vault <span class="vault-state" id="vaultState">locked</span></button>
+    <button class="vault-button" id="networkButton">◎ Network Console <span class="vault-state" id="networkState">loading</span></button>
     <div><div class="navlabel">Local history</div><div class="history" id="history"></div></div>
     <div class="sidebar-bottom">
       <div class="privacy-mini"><span class="shield"></span><span>History stays in this browser</span></div>
@@ -178,6 +179,12 @@
       <div class="route-sub" id="contextSources">No external context selected.</div>
     </div>
     <div class="panel">
+      <div class="panel-title">Edge intelligence</div>
+      <div class="metric"><span>Task</span><b id="edgeTask">—</b></div>
+      <div class="metric"><span>Local cache</span><b id="edgeCache">—</b></div>
+      <div class="route-sub" id="edgeNotes">Local-first planning appears after a request.</div>
+    </div>
+    <div class="panel">
       <div class="panel-title">Split inference</div>
       <div class="route-main" id="splitState">Single route</div>
       <div class="route-sub" id="splitReason">33jane will separate private and public work when needed.</div>
@@ -234,6 +241,29 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="networkModal">
+  <div class="modal">
+    <div class="modal-head"><h2>33jane Network Console</h2><button class="tool" id="networkClose">Close</button></div>
+    <p class="route-sub">Live view of Jane's agent, compute, enterprise and optional 33G infrastructure. Secrets and private prompts are never shown here.</p>
+    <div class="hero-grid" style="grid-template-columns:repeat(2,1fr);margin-top:16px">
+      <div class="hero-card"><strong id="networkNodes">0 compute nodes</strong><small id="networkCapacity">0 requests/min capacity</small></div>
+      <div class="hero-card"><strong id="networkPrivacy">0 private nodes</strong><small id="networkRegions">No regions reported</small></div>
+      <div class="hero-card"><strong id="networkAgents">0 agent accounts</strong><small>Programmable budget-constrained identities</small></div>
+      <div class="hero-card"><strong id="networkEnterprise">0 enterprise orgs</strong><small>Policy gateway configuration</small></div>
+      <div class="hero-card"><strong id="networkToken">33G utility ready</strong><small id="networkTokenStatus">deployment chain not configured</small></div>
+      <div class="hero-card"><strong id="networkMonad">Monad adapter</strong><small id="networkMonadStatus">deployment configuration pending</small></div>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <div class="panel-title">Open compute providers</div>
+      <div id="networkProviderList" class="route-sub">No active network providers registered.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Developer interface</div>
+      <div class="receipt-hash">/v1/chat/completions · /v1/responses · /api/network/providers · /api/token/utility</div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   var state = {
@@ -248,7 +278,8 @@
     vaultEntries: [],
     contextSummary: {originalChars:0,sentChars:0,selectedChunks:0,sources:[]},
     pendingSettlement: null,
-    principal: localStorage.getItem("33jane_principal") || ("browser-"+(crypto.randomUUID?crypto.randomUUID():Date.now()))
+    principal: localStorage.getItem("33jane_principal") || ("browser-"+(crypto.randomUUID?crypto.randomUUID():Date.now())),
+    edgeCacheEnabled: true
   };
 
   var el = function(id){ return document.getElementById(id); };
@@ -453,6 +484,52 @@
     el("contextSources").textContent=summary.sources&&summary.sources.length?summary.sources.join(" · "):"No external context selected.";
   }
 
+  async function localHash(value){
+    var bytes=new TextEncoder().encode(value);
+    var digest=await crypto.subtle.digest("SHA-256",bytes);
+    return Array.from(new Uint8Array(digest)).map(function(b){return b.toString(16).padStart(2,"0");}).join("");
+  }
+
+  async function edgeCacheKey(payload){
+    return "33jane_edge_"+await localHash(JSON.stringify({
+      mode:payload.mode,
+      messages:payload.messages,
+      clientContext:payload.clientContext
+    }));
+  }
+
+  async function readEdgeCache(payload){
+    if(!state.edgeCacheEnabled||payload.clientContext.sentChars)return null;
+    try{
+      var key=await edgeCacheKey(payload);
+      var value=JSON.parse(sessionStorage.getItem(key)||"null");
+      if(!value||Date.now()-value.at>15*60*1000)return null;
+      return value;
+    }catch(_){return null;}
+  }
+
+  async function writeEdgeCache(payload,data){
+    if(!state.edgeCacheEnabled||payload.clientContext.sentChars||!data||!data.answer)return;
+    try{
+      var key=await edgeCacheKey(payload);
+      sessionStorage.setItem(key,JSON.stringify({at:Date.now(),answer:data.answer,model:data.model,route:data.route,privacyReceipt:data.privacyReceipt}));
+    }catch(_){}
+  }
+
+  function showEdge(plan,cacheHit){
+    if(!plan)return;
+    el("edgeTask").textContent=plan.task||"—";
+    el("edgeCache").textContent=cacheHit?"device hit":(plan.cacheEligible?"eligible":"bypass");
+    el("edgeNotes").textContent=(plan.recommendations||[]).join(" · ")||"No extra edge action required.";
+  }
+
+  async function edgePreview(payload){
+    try{
+      var r=await fetch("/api/edge/plan",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
+      var data=await r.json();if(r.ok)showEdge(data,false);return data;
+    }catch(_){return null;}
+  }
+
   async function splitPreview(payload){
     try{
       var r=await fetch("/api/ai/plan",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
@@ -623,8 +700,23 @@
       spendingPolicy: spendingPolicy()
     };
 
-    await Promise.all([routePreview(payload),splitPreview(payload)]);
+    await Promise.all([routePreview(payload),splitPreview(payload),edgePreview(payload)]);
     send.textContent = "Thinking…";
+
+    var cached=await readEdgeCache(payload);
+    if(cached){
+      var cachedAnswer=rehydrate(cached.answer,scan.map);
+      state.messages.push({role:"assistant",content:cached.answer});
+      addMessage("assistant",cachedAnswer,{
+        model:(cached.model&&cached.model.id)||"edge-cache",
+        cost:0,
+        savings:100,
+        privateCount:scan.count
+      });
+      showReceipt(cached.privacyReceipt);
+      showEdge({task:"cached",cacheEligible:true,recommendations:["served from device-local session cache; no provider request was made"]},true);
+      send.disabled=false;send.textContent="Send";promptEl.focus();saveHistory();return;
+    }
 
     try{
       var response = await fetch("/api/ai/chat",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
@@ -649,6 +741,8 @@
         showReceipt(data.privacyReceipt);
         showPolicy(data.spendingPolicy);
         showSettlement(data.settlement);
+        showEdge(data.edgePlan,false);
+        await writeEdgeCache(payload,data);
         saveHistory();
       }
     }catch(err){
@@ -706,6 +800,7 @@
     el("splitState").textContent="Single route";el("splitReason").textContent="33jane will separate private and public work when needed.";
     el("receiptRetention").textContent="—";el("receiptPrivacy").textContent="—";el("receiptHash").textContent="Receipt appears after successful inference.";
     showSettlement(null);showPolicy(null);el("monadTx").textContent="";
+    el("edgeTask").textContent="—";el("edgeCache").textContent="—";el("edgeNotes").textContent="Local-first planning appears after a request.";
   }
 
   document.querySelectorAll(".mode").forEach(function(b){
@@ -746,12 +841,42 @@
   el("vaultLock").onclick=lockVault;
   el("vaultToggle").onchange=function(){if(this.checked&&!state.vaultKey){this.checked=false;el("vaultModal").classList.add("open");}};
 
+  async function loadNetworkConsole(){
+    try{
+      var results=await Promise.all([
+        fetch("/api/ai/health").then(function(r){return r.json();}),
+        fetch("/api/network/providers").then(function(r){return r.json();}),
+        fetch("/api/token/status").then(function(r){return r.json();})
+      ]);
+      var health=results[0],providers=results[1],token=results[2],summary=health.providerNetwork||{};
+      el("networkNodes").textContent=(summary.nodes||0)+" compute nodes";
+      el("networkCapacity").textContent=(summary.capacityRpm||0)+" requests/min capacity";
+      el("networkPrivacy").textContent=(summary.zeroRetentionNodes||0)+" private nodes";
+      el("networkRegions").textContent=(summary.regions&&summary.regions.length)?summary.regions.join(" · "):"No regions reported";
+      el("networkAgents").textContent=((health.agents&&health.agents.count)||0)+" agent accounts";
+      el("networkEnterprise").textContent=((health.enterprise&&health.enterprise.organizations)||0)+" enterprise orgs";
+      el("networkToken").textContent="33G · fixed 1B supply";
+      el("networkTokenStatus").textContent=token.configured?"utility contract connected on chain "+token.chainId:"utility contracts built · deployment chain configurable";
+      el("networkMonadStatus").textContent=health.monad&&health.monad.configured?"settlement live on chain "+health.monad.chainId:"contract built · RPC/address configuration pending";
+      var rows=(providers.providers||[]).map(function(p){
+        return '<div class="alt"><div class="alt-row"><span>'+escapeHtml(p.label)+' · '+escapeHtml(p.region||"global")+'</span><span>'+Math.round((p.reputation||0)*100)+'%</span></div></div>';
+      }).join("");
+      el("networkProviderList").innerHTML=rows||"No active network providers registered.";
+      el("networkState").textContent=(summary.nodes||0)+" nodes";
+    }catch(_){el("networkState").textContent="unavailable";}
+  }
+
+  el("networkButton").onclick=function(){el("networkModal").classList.add("open");loadNetworkConsole();};
+  el("networkClose").onclick=function(){el("networkModal").classList.remove("open");};
+  el("networkModal").addEventListener("click",function(e){if(e.target===this)this.classList.remove("open");});
+
   el("settleButton").onclick=settleWithWallet;
   el("policyPrincipal").value=state.principal;
   localStorage.setItem("33jane_principal",state.principal);
 
   fetch("/api/ai/health").then(function(r){return r.json();}).then(function(d){
     el("apiStatus").textContent=d.configuredProviders&&d.configuredProviders.length?d.configuredProviders.length+" providers live":"router online · add provider key";
+    el("networkState").textContent=(d.providerNetwork&&d.providerNetwork.nodes?d.providerNetwork.nodes:0)+" nodes";
     if(d.monad&&d.monad.configured){
       el("monadNetwork").textContent="chain "+d.monad.chainId;
       el("monadStatus").textContent="Monad settlement ready · "+d.monad.tokenSymbol;
