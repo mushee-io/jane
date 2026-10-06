@@ -1,5 +1,12 @@
 import { JaneAIService } from "../ai/service.js";
-import { feedbackSchema, janeRequestSchema, policyEvaluateSchema } from "../ai/schemas.js";
+import {
+  agentAccountSchema,
+  enterpriseOrgSchema,
+  feedbackSchema,
+  janeRequestSchema,
+  networkProviderSchema,
+  policyEvaluateSchema
+} from "../ai/schemas.js";
 import {
   openAIChatSchema,
   openAIModels,
@@ -12,6 +19,8 @@ import {
 } from "../openai/compat.js";
 import { prepareSettlement, settlementStatus, verifySettlement } from "../monad/settlement.js";
 import { verifyPrivacyReceipt, type PrivacyReceipt } from "../privacy/receipt.js";
+import { getTokenUtility, tokenUtilityStatus } from "../token/utility.js";
+import type { JaneRequest } from "../ai/types.js";
 import type { Hex } from "viem";
 
 function json(payload: unknown, status = 200, extra: Record<string,string> = {}): Response {
@@ -22,7 +31,7 @@ function json(payload: unknown, status = 200, extra: Record<string,string> = {})
       "cache-control": "no-store",
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET,POST,OPTIONS",
-      "access-control-allow-headers": "content-type,authorization",
+      "access-control-allow-headers": "content-type,authorization,x-jane-admin,x-jane-org,x-jane-actor,x-jane-department,x-jane-agent",
       ...extra
     }
   });
@@ -51,6 +60,29 @@ function openAIError(message: string, status = 400, code = "jane_error"): Respon
       code
     }
   }, status);
+}
+
+function requireAdmin(request: Request): Response | null {
+  const configured = process.env.JANE_ADMIN_KEY?.trim();
+  if (!configured) return json({ error: "ADMIN_API_DISABLED" }, 503);
+  const supplied = request.headers.get("x-jane-admin")?.trim();
+  if (supplied !== configured) return json({ error: "ADMIN_UNAUTHORIZED" }, 401);
+  return null;
+}
+
+function requestContext(request: Request, input: JaneRequest): JaneRequest {
+  const orgId = request.headers.get("x-jane-org")?.trim();
+  const actorId = request.headers.get("x-jane-actor")?.trim();
+  const department = request.headers.get("x-jane-department")?.trim();
+  const agentAccountId = request.headers.get("x-jane-agent")?.trim();
+
+  return {
+    ...input,
+    enterprise: orgId
+      ? { orgId, actorId: actorId || undefined, department: department || undefined }
+      : input.enterprise,
+    agentAccountId: agentAccountId || input.agentAccountId
+  };
 }
 
 function requireJaneApiKey(request: Request): Response | null {
@@ -96,7 +128,7 @@ export function createApiHandler() {
         }
 
         try {
-          const result = await jane.chat(responseToJaneRequest(input));
+          const result = await jane.chat(requestContext(request, responseToJaneRequest(input)));
           return json(toOpenAIResponsesResult(result, input.model));
         } catch (error) {
           const value = error as Error;
@@ -119,7 +151,7 @@ export function createApiHandler() {
         }
 
         try {
-          const result = await jane.chat(toJaneRequest(input));
+          const result = await jane.chat(requestContext(request, toJaneRequest(input)));
           if (input.stream) {
             return new Response(openAIStream(result, input.model), {
               status: 200,
@@ -152,17 +184,17 @@ export function createApiHandler() {
       }
 
       if (request.method === "POST" && path === "/api/ai/route") {
-        const input = janeRequestSchema.parse(await parseBody(request));
+        const input = requestContext(request, janeRequestSchema.parse(await parseBody(request)));
         return json(jane.preview(input));
       }
 
       if (request.method === "POST" && path === "/api/ai/plan") {
-        const input = janeRequestSchema.parse(await parseBody(request));
+        const input = requestContext(request, janeRequestSchema.parse(await parseBody(request)));
         return json(jane.plan(input));
       }
 
       if (request.method === "POST" && path === "/api/ai/chat") {
-        const input = janeRequestSchema.parse(await parseBody(request));
+        const input = requestContext(request, janeRequestSchema.parse(await parseBody(request)));
         try {
           return json(await jane.chat(input));
         } catch (error) {
@@ -175,6 +207,105 @@ export function createApiHandler() {
       if (request.method === "POST" && path === "/api/ai/feedback") {
         const input = feedbackSchema.parse(await parseBody(request));
         return json(jane.feedback(input.requestId, input.signal));
+      }
+
+      if (request.method === "POST" && path === "/api/edge/plan") {
+        const input = requestContext(request, janeRequestSchema.parse(await parseBody(request)));
+        return json(jane.edge(input));
+      }
+
+      if (request.method === "GET" && path === "/api/agents") {
+        const adminError = requireAdmin(request);
+        if (adminError) return adminError;
+        return json({ agents: jane.agents.list() });
+      }
+
+      if (request.method === "POST" && path === "/api/agents") {
+        const adminError = requireAdmin(request);
+        if (adminError) return adminError;
+        const input = agentAccountSchema.parse(await parseBody(request));
+        return json({ agent: jane.agents.upsert(input) }, 201);
+      }
+
+      if (request.method === "POST" && /^\/api\/agents\/[^/]+\/disable$/.test(path)) {
+        const adminError = requireAdmin(request);
+        if (adminError) return adminError;
+        const id = path.split("/")[3] ?? "";
+        const agent = jane.agents.disable(id);
+        return agent ? json({ agent }) : json({ error: "AGENT_NOT_FOUND" }, 404);
+      }
+
+      if (request.method === "GET" && path === "/api/network/summary") {
+        return json(jane.market.summary());
+      }
+
+      if (request.method === "GET" && path === "/api/network/providers") {
+        return json({
+          providers: jane.market.list().map((node) => ({
+            nodeId: node.nodeId,
+            operator: node.operator,
+            name: node.name,
+            model: node.model,
+            label: node.label,
+            capabilities: node.capabilities,
+            contextWindow: node.contextWindow,
+            inputCostPerMillion: node.inputCostPerMillion,
+            outputCostPerMillion: node.outputCostPerMillion,
+            qualityScore: node.qualityScore,
+            latencyScore: node.latencyScore,
+            privacyScore: node.privacyScore,
+            zeroRetention: node.zeroRetention,
+            region: node.region,
+            capacityRpm: node.capacityRpm,
+            reputation: node.reputation,
+            successfulJobs: node.successfulJobs,
+            failedJobs: node.failedJobs,
+            lastHeartbeatAt: node.lastHeartbeatAt
+          }))
+        });
+      }
+
+      if (request.method === "POST" && path === "/api/network/providers") {
+        const adminError = requireAdmin(request);
+        if (adminError) return adminError;
+        const input = networkProviderSchema.parse(await parseBody(request));
+        return json({ provider: jane.market.upsert(input) }, 201);
+      }
+
+      if (request.method === "POST" && /^\/api\/network\/providers\/[^/]+\/heartbeat$/.test(path)) {
+        const adminError = requireAdmin(request);
+        if (adminError) return adminError;
+        const nodeId = path.split("/")[4] ?? "";
+        return json({ provider: jane.market.heartbeat(nodeId) });
+      }
+
+      if (request.method === "GET" && path === "/api/enterprise/orgs") {
+        const adminError = requireAdmin(request);
+        if (adminError) return adminError;
+        return json({ organizations: jane.enterprise.listOrgs() });
+      }
+
+      if (request.method === "POST" && path === "/api/enterprise/orgs") {
+        const adminError = requireAdmin(request);
+        if (adminError) return adminError;
+        const input = enterpriseOrgSchema.parse(await parseBody(request));
+        return json({ organization: jane.enterprise.upsertOrg(input) }, 201);
+      }
+
+      if (request.method === "GET" && path === "/api/enterprise/audit") {
+        const adminError = requireAdmin(request);
+        if (adminError) return adminError;
+        return json({ events: jane.enterprise.auditLog(url.searchParams.get("orgId") ?? undefined) });
+      }
+
+      if (request.method === "GET" && path === "/api/token/status") {
+        return json(tokenUtilityStatus());
+      }
+
+      if (request.method === "GET" && path === "/api/token/utility") {
+        const address = url.searchParams.get("address");
+        if (!address) return json({ error: "ADDRESS_REQUIRED" }, 400);
+        return json(await getTokenUtility(address));
       }
 
       if (request.method === "POST" && path === "/api/privacy/verify") {
