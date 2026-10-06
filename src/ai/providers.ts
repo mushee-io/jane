@@ -6,7 +6,21 @@ interface ProviderConfig {
   headers?: Record<string, string>;
 }
 
-function configFor(provider: ModelProfile["provider"]): ProviderConfig {
+function configFor(model: ModelProfile): ProviderConfig {
+  const provider = model.provider;
+  if (provider === "network") {
+    const apiKey = model.apiKeyEnv ? process.env[model.apiKeyEnv] : undefined;
+    return {
+      baseUrl: model.endpoint ?? "",
+      apiKey
+    };
+  }
+  if (provider === "jane") {
+    return {
+      baseUrl: process.env.JANE_COMPUTE_BASE_URL ?? "",
+      apiKey: process.env.JANE_COMPUTE_API_KEY
+    };
+  }
   if (provider === "openai") {
     return {
       baseUrl: process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
@@ -36,9 +50,10 @@ function configFor(provider: ModelProfile["provider"]): ProviderConfig {
 }
 
 export async function completeChat(model: ModelProfile, messages: ChatMessage[]): Promise<CompletionResult> {
-  const config = configFor(model.provider);
+  const config = configFor(model);
   if (!config.baseUrl) throw new Error("PROVIDER_BASE_URL_NOT_CONFIGURED");
-  if (model.provider !== "private" && !config.apiKey) throw new Error("PROVIDER_API_KEY_NOT_CONFIGURED");
+  if (!["private", "network"].includes(model.provider) && !config.apiKey) throw new Error("PROVIDER_API_KEY_NOT_CONFIGURED");
+  if (model.provider === "network" && model.apiKeyEnv && !config.apiKey) throw new Error("PROVIDER_API_KEY_NOT_CONFIGURED");
 
   const started = Date.now();
   const headers: Record<string, string> = {
