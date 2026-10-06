@@ -97,3 +97,10 @@ export function createPrivacyReceipt(input: {
     receiptHash: sha256(JSON.stringify(receiptBase))
   };
 }
+
+
+export function verifyPrivacyReceipt(receipt: PrivacyReceipt): boolean {
+  const { receiptHash, ...base } = receipt;
+  if (!/^[a-f0-9]{64}$/.test(receiptHash)) return false;
+  return sha256(JSON.stringify(base)) === receiptHash;
+}
