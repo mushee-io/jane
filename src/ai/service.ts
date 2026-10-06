@@ -2,6 +2,9 @@ import { modelCatalog } from "./catalog.js";
 import { decideRoute } from "./price-optimizer.js";
 import { completeChat } from "./providers.js";
 import { JaneTelemetry } from "./telemetry.js";
+import { checkPrivacyPolicy } from "../privacy/policy.js";
+import { createPrivacyReceipt } from "../privacy/receipt.js";
+import { planSplitInference } from "../privacy/split-planner.js";
 import type { FeedbackSignal, JaneRequest, ModelProfile, RouteDecision } from "./types.js";
 
 function publicModel(model: ModelProfile) {
@@ -40,7 +43,12 @@ export class JaneAIService {
         multiModelRouter: true,
         priceOptimizer: true,
         outcomeRouting: true,
-        localPrivacyScanner: true
+        localPrivacyScanner: true,
+        contextMinimization: true,
+        encryptedVaultFoundation: true,
+        confidentialRouter: true,
+        splitInferencePlanner: true,
+        privacyReceipts: true
       },
       configuredProviders: models.filter((model) => model.configured).map((model) => model.provider),
       availableRoutes: models.map((model) => ({ id: model.id, configured: model.configured }))
@@ -49,6 +57,10 @@ export class JaneAIService {
 
   preview(request: JaneRequest): RouteDecision {
     return decideRoute(request, modelCatalog(), this.telemetry, false);
+  }
+
+  plan(request: JaneRequest) {
+    return planSplitInference(request);
   }
 
   async chat(request: JaneRequest) {
@@ -69,6 +81,12 @@ export class JaneAIService {
     const failures: Array<{ modelId: string; error: string }> = [];
     for (const candidate of candidates) {
       const model = candidate.model;
+      const policy = checkPrivacyPolicy(request, model);
+      if (!policy.allowed) {
+        failures.push({ modelId: model.id, error: `PRIVACY_POLICY_BLOCKED:${policy.reasons.join("|")}` });
+        continue;
+      }
+
       const started = Date.now();
       try {
         const completion = await completeChat(model, request.messages);
@@ -80,6 +98,16 @@ export class JaneAIService {
 
         this.telemetry.recordExecution(model.id, true, completion.latencyMs, cost);
         this.remember(liveDecision.requestId, model.id);
+
+        const receipt = createPrivacyReceipt({
+          request,
+          candidate,
+          model,
+          upstreamModel: completion.rawModel ?? model.model,
+          actualCostUsd: Number(cost.toFixed(8)),
+          estimatedSavingsPercent: previewDecision.estimatedSavingsPercent,
+          failoverAttempts: failures.length
+        });
 
         return {
           id: liveDecision.requestId,
@@ -115,7 +143,9 @@ export class JaneAIService {
             outputTokens: actualOutput
           },
           latencyMs: completion.latencyMs,
-          failoverAttempts: failures
+          failoverAttempts: failures,
+          privacyReceipt: receipt,
+          splitPlan: planSplitInference(request)
         };
       } catch (error) {
         const message = error instanceof Error ? error.message : "PROVIDER_FAILURE";
