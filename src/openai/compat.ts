@@ -114,3 +114,77 @@ export function openAIModels() {
     owned_by: "33jane"
   }));
 }
+
+
+export const openAIResponsesSchema = z.object({
+  model: z.string().default("33jane-auto"),
+  input: z.union([
+    z.string(),
+    z.array(z.object({
+      role: z.enum(["system", "user", "assistant"]).default("user"),
+      content: z.string()
+    }))
+  ]),
+  stream: z.boolean().optional().default(false),
+  user: z.string().max(256).optional(),
+  jane: z.object({
+    maxCostUsd: z.number().positive().max(100).optional(),
+    privacyApplied: z.boolean().optional(),
+    redactedCount: z.number().int().min(0).optional(),
+    redactionCategories: z.array(z.string()).optional(),
+    spendingPolicy: z.any().optional()
+  }).optional()
+});
+
+export type OpenAIResponsesInput = z.infer<typeof openAIResponsesSchema>;
+
+export function responseToJaneRequest(input: OpenAIResponsesInput): JaneRequest {
+  const messages = typeof input.input === "string"
+    ? [{ role: "user" as const, content: input.input }]
+    : input.input;
+
+  return {
+    mode: modelToMode(input.model),
+    messages,
+    maxCostUsd: input.jane?.maxCostUsd,
+    clientPrivacy: {
+      applied: input.jane?.privacyApplied ?? false,
+      redactedCount: input.jane?.redactedCount ?? 0,
+      categories: input.jane?.redactionCategories ?? []
+    },
+    spendingPolicy: input.jane?.spendingPolicy
+  };
+}
+
+export function toOpenAIResponsesResult(result: any, requestedModel: string) {
+  return {
+    id: `resp_${String(result.id).replace(/-/g, "")}`,
+    object: "response",
+    created_at: Math.floor(Date.now() / 1000),
+    status: "completed",
+    model: requestedModel,
+    output: [{
+      id: `msg_${String(result.id).replace(/-/g, "")}`,
+      type: "message",
+      status: "completed",
+      role: "assistant",
+      content: [{
+        type: "output_text",
+        text: result.answer,
+        annotations: []
+      }]
+    }],
+    usage: {
+      input_tokens: result.usage?.inputTokens ?? 0,
+      output_tokens: result.usage?.outputTokens ?? 0,
+      total_tokens: (result.usage?.inputTokens ?? 0) + (result.usage?.outputTokens ?? 0)
+    },
+    jane: {
+      request_id: result.id,
+      routed_model: result.model,
+      route: result.route,
+      privacy_receipt: result.privacyReceipt,
+      settlement: result.settlement ?? null
+    }
+  };
+}
