@@ -26,6 +26,8 @@ import type { JaneRequest } from "../ai/types.js";
 import { unifiedCatalog, catalogSummary } from "../catalog/unified.js";
 import { JaneMediaService, type MediaRequest } from "../media/service.js";
 import { JaneResearchService } from "../research/service.js";
+import { JaneDocumentService, type DocumentExtractRequest } from "../documents/service.js";
+import { JaneAgenticService, type AgenticRunRequest } from "../agents/orchestrator.js";
 import { JaneCharacterRegistry, type JaneCharacter } from "../characters/service.js";
 import { JaneArenaService, type ArenaRequest } from "../arena/service.js";
 import { ConfidentialComputeService, type AttestationDocument } from "../confidential/attestation.js";
@@ -115,6 +117,8 @@ export function createApiHandler() {
   const jane = new JaneAIService();
   const media = new JaneMediaService();
   const research = new JaneResearchService();
+  const documents = new JaneDocumentService();
+  const agentic = new JaneAgenticService(jane, research, media);
   const characters = new JaneCharacterRegistry();
   const arena = new JaneArenaService();
   const confidential = new ConfidentialComputeService();
@@ -440,6 +444,23 @@ export function createApiHandler() {
         return json(research.status());
       }
 
+      if (request.method === "POST" && path === "/api/documents/extract") {
+        const body = await parseBody(request) as DocumentExtractRequest;
+        return json(await documents.extract(body));
+      }
+
+      if (request.method === "POST" && path === "/api/agent/plan") {
+        const body = await parseBody(request) as AgenticRunRequest;
+        const parsed = requestContext(request, janeRequestSchema.parse(body));
+        return json({ steps: agentic.plan({ ...body, ...parsed }) });
+      }
+
+      if (request.method === "POST" && path === "/api/agent/run") {
+        const body = await parseBody(request) as AgenticRunRequest;
+        const parsed = requestContext(request, janeRequestSchema.parse(body));
+        return json(await agentic.run({ ...body, ...parsed }));
+      }
+
       if (request.method === "GET" && path === "/api/voice/status") {
         return json(voice.status());
       }
@@ -450,9 +471,21 @@ export function createApiHandler() {
       }
 
       if (request.method === "POST" && path === "/api/research") {
-        const body = await parseBody(request) as JaneRequest & { query?: string; synthesize?: boolean };
+        const body = await parseBody(request) as JaneRequest & {
+          query?: string;
+          synthesize?: boolean;
+          urls?: string[];
+          includeX?: boolean;
+          maxResults?: number;
+        };
         const input = requestContext(request, janeRequestSchema.parse(body));
-        const result = await research.research({ ...input, query: body.query });
+        const result = await research.research({
+          ...input,
+          query: body.query,
+          urls: body.urls,
+          includeX: body.includeX,
+          maxResults: body.maxResults
+        });
         if (body.synthesize === false || result.sources.length === 0) return json(result);
 
         try {
