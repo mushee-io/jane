@@ -6,6 +6,8 @@ import { edgePlan } from "../src/edge/intelligence.js";
 import { EnterpriseGateway } from "../src/enterprise/gateway.js";
 import { tokenUtilityStatus } from "../src/token/utility.js";
 import { createApiHandler } from "../src/api/handler.js";
+import { prepareAgentWalletCreation } from "../src/agents/onchain-wallet.js";
+import { prepareComputeRegistration } from "../src/network/onchain-registry.js";
 
 test("agent accounts produce enforceable spending policies", () => {
   delete process.env.JANE_AGENT_ACCOUNTS_JSON;
@@ -109,4 +111,52 @@ test("admin mutation APIs are closed when no admin key is configured", async () 
   assert.equal(response.status, 503);
   const body = await response.json() as { error: string };
   assert.equal(body.error, "ADMIN_API_DISABLED");
+});
+
+
+test("agent wallet factory adapter creates unsigned Monad transaction", () => {
+  process.env.MONAD_CHAIN_ID = "10143";
+  process.env.MONAD_AGENT_WALLET_FACTORY = "0x1111111111111111111111111111111111111111";
+  const tx = prepareAgentWalletCreation({
+    owner: "0x2222222222222222222222222222222222222222",
+    dailyLimitAtomic: "2000000",
+    perRequestLimitAtomic: "50000"
+  });
+  assert.equal(tx.chainId, 10143);
+  assert.equal(tx.to, process.env.MONAD_AGENT_WALLET_FACTORY);
+  assert.match(tx.data, /^0x[a-fA-F0-9]+$/);
+});
+
+test("compute registry adapter hashes private endpoint details before Monad registration", () => {
+  process.env.MONAD_CHAIN_ID = "10143";
+  process.env.MONAD_COMPUTE_REGISTRY = "0x3333333333333333333333333333333333333333";
+  process.env.MONAD_COMPUTE_MIN_BOND = "0.01";
+  const tx = prepareComputeRegistration({
+    metadata: { model: "qwen", region: "eu-west" },
+    endpoint: "https://private-node.example.com/v1"
+  });
+  assert.equal(tx.chainId, 10143);
+  assert.equal(tx.to, process.env.MONAD_COMPUTE_REGISTRY);
+  assert.match(tx.metadataHash, /^0x[a-f0-9]{64}$/);
+  assert.match(tx.endpointHash, /^0x[a-f0-9]{64}$/);
+  assert.equal(JSON.stringify(tx).includes("private-node.example.com"), false);
+});
+
+test("readiness endpoint distinguishes built code from external configuration", async () => {
+  delete process.env.OPENAI_API_KEY;
+  delete process.env.GROQ_API_KEY;
+  delete process.env.OPENROUTER_API_KEY;
+  delete process.env.JANE_PRIVATE_BASE_URL;
+  delete process.env.JANE_COMPUTE_BASE_URL;
+  const handle = createApiHandler();
+  const response = await handle(new Request("http://localhost/api/readiness"));
+  assert.equal(response.status, 200);
+  const body = await response.json() as {
+    status: string;
+    core: { openAICompatibleApi: boolean; localPrivacyFirewall: boolean };
+    token: { optional: boolean };
+  };
+  assert.equal(body.core.openAICompatibleApi, true);
+  assert.equal(body.core.localPrivacyFirewall, true);
+  assert.equal(body.token.optional, true);
 });
