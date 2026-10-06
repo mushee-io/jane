@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test test/**/*.test.ts",
     "build": "tsc -p tsconfig.build.json && node scripts/copy-static.mjs",
-    "check": "npm run lint && npm run typecheck && npm test && npm run build"
+    "check": "npm run lint && npm run typecheck && npm test && npm run compile:contracts && npm run build",
+    "compile:contracts": "node scripts/compile-contracts.mjs",
+    "deploy:monad-settlement": "node scripts/deploy-settlement.mjs"
   },
   "dependencies": {
     "zod": "^3.25.76",
@@ -20,6 +22,7 @@
   "devDependencies": {
     "@types/node": "^22.15.0",
     "tsx": "^4.20.0",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "solc": "^0.8.30"
   }
 }
