@@ -34,7 +34,8 @@ function mergePolicies(a: SpendingPolicy | undefined, b: SpendingPolicy | undefi
     allowedProviders: intersect(a.allowedProviders, b.allowedProviders),
     requireZeroRetention: Boolean(a.requireZeroRetention || b.requireZeroRetention),
     minPrivacyScore: max(a.minPrivacyScore, b.minPrivacyScore),
-    maxLatencyScorePenalty: min(a.maxLatencyScorePenalty, b.maxLatencyScorePenalty)
+    maxLatencyScorePenalty: min(a.maxLatencyScorePenalty, b.maxLatencyScorePenalty),
+    allowedRegions: intersect(a.allowedRegions, b.allowedRegions)
   };
 }
 
