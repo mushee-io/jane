@@ -6,7 +6,7 @@
 
 > **The internet should not have to choose an AI. 33jane chooses intelligence for it.**
 
-## Milestones 1–15
+## Milestones 1–22
 
 ### 1. Core 33jane Chat
 The repository now ships a responsive AI chat product with:
@@ -254,6 +254,26 @@ API:
 GET  /api/monad/status
 POST /api/monad/settlement/prepare
 POST /api/monad/settlement/verify
+
+POST /api/edge/plan
+
+GET  /api/agents
+POST /api/agents
+GET  /api/agents/wallet/status
+POST /api/agents/wallet/prepare
+
+GET  /api/network/summary
+GET  /api/network/providers
+POST /api/network/providers
+GET  /api/network/registry/status
+POST /api/network/registry/prepare
+
+GET  /api/enterprise/orgs
+POST /api/enterprise/orgs
+GET  /api/enterprise/audit
+
+GET  /api/token/status
+GET  /api/token/utility
 ```
 
 The web client can send the approval + settlement transaction through an injected EVM wallet once Monad configuration is present.
@@ -300,6 +320,166 @@ Verified Execution Receipt
 ```
 
 The actual prompt, response, Vault contents and redaction map never need to be written onchain.
+
+
+
+### 16. Agent Wallets
+33jane now has both an offchain agent-account policy layer and deployable onchain agent wallets.
+
+The offchain registry gives every autonomous agent:
+- a stable agent ID
+- owner identity
+- optional wallet/delegate address
+- daily inference budget
+- per-request budget
+- allowed 33jane modes
+- zero-retention requirement
+- minimum privacy score
+
+The onchain layer includes:
+- `JaneAgentWallet.sol`
+- `JaneAgentWalletFactory.sol`
+
+An agent wallet can hold native assets or ERC-20s and pay inference through `JaneInferenceSettlement` while enforcing daily and per-request limits.
+
+Public transaction-builder endpoints:
+
+```text
+GET  /api/agents/wallet/status
+POST /api/agents/wallet/prepare
+```
+
+Admin account-management endpoints are disabled unless `JANE_ADMIN_KEY` is set.
+
+### 17. AI Provider Marketplace
+Approved external compute providers can register model manifests with 33jane.
+
+Each provider advertises:
+- model/capabilities
+- context window
+- input/output pricing
+- quality score
+- latency score
+- privacy score
+- zero-retention status
+- region
+- capacity
+- reputation
+
+The normal 33jane router consumes these manifests as first-class routes, so marketplace providers compete directly with OpenAI, Groq, OpenRouter and Jane Compute.
+
+Provider mutation endpoints require `JANE_ADMIN_KEY`; the public provider list never exposes API-key environment names or secret values.
+
+### 18. 33jane-Owned Inference
+33jane now has a dedicated `jane` provider class.
+
+Configure:
+
+```text
+JANE_COMPUTE_BASE_URL
+JANE_COMPUTE_API_KEY
+JANE_COMPUTE_MODEL
+```
+
+Jane Compute participates in the same price, quality, reliability and privacy router as external providers.
+
+A sufficiently private zero-retention Jane Compute deployment can serve **Confidential** mode without relying on a third party.
+
+### 19. Edge Intelligence
+The client and server now cooperate on local-first inference planning.
+
+The edge layer includes:
+- local PII scanning
+- local context minimization
+- local task hints
+- request hashing
+- device-local exact-response cache in `sessionStorage`
+- automatic cache bypass when external context is attached
+
+A local cache hit makes no upstream provider request and costs $0 in provider inference.
+
+Endpoint:
+
+```text
+POST /api/edge/plan
+```
+
+### 20. Enterprise Gateway
+Organizations can define policy that is applied before routing:
+
+- allowed modes
+- allowed provider classes
+- zero-retention requirement
+- minimum privacy score
+- per-request budget
+- daily budget
+- data-residency region
+
+Enterprise identity can be attached to API calls through:
+
+```text
+X-Jane-Org
+X-Jane-Actor
+X-Jane-Department
+```
+
+Audit events store only request/receipt hashes, selected model/provider, cost and organizational identity—not raw prompts.
+
+Admin endpoints:
+
+```text
+GET  /api/enterprise/orgs
+POST /api/enterprise/orgs
+GET  /api/enterprise/audit
+```
+
+### 21. Optional 33G Utility Layer
+The repository contains deployable `Jane33G` and `Jane33GUtility` contracts.
+
+33G has:
+- fixed maximum supply: **1,000,000,000 33G**
+- no post-deployment mint function
+- configurable treasury receiver at deployment
+
+The utility staking contract has three tiers and returns a platform-benefit basis-point value.
+
+Important: the benefit applies to 33jane platform fees/limits/credits. It does **not** magically reduce what an upstream model provider must be paid.
+
+The 33G chain is intentionally environment-configurable so the final deployment can be BNB Chain, Monad, Base or another EVM chain without rewriting Jane.
+
+```text
+GET /api/token/status
+GET /api/token/utility?address=0x...
+```
+
+### 22. Open Compute Network
+The open network adds:
+- dynamic provider manifests
+- node heartbeat
+- capacity reporting
+- outcome-derived reputation
+- network routing
+- region/privacy metadata
+- optional API authentication per node
+- bonded provider registration on Monad
+
+`JaneComputeRegistry.sol` stores only:
+- provider operator
+- metadata hash
+- endpoint hash
+- bond
+- active status
+
+It does not expose the actual private endpoint configuration onchain.
+
+Unsigned registration transactions can be prepared through:
+
+```text
+GET  /api/network/registry/status
+POST /api/network/registry/prepare
+```
+
+The public network console in the 33jane UI shows active nodes, capacity, regions, privacy-capable nodes, agent infrastructure, enterprise status, Monad status and optional 33G status.
 
 
 ## API
@@ -398,11 +578,11 @@ This runs:
 - AI router tests
 - production build
 
-## Monad direction
+## Monad architecture
 
 33jane's prompts, private files and AI responses remain offchain.
 
-Monad will be used later for the programmable economic and verification layer:
+Monad is the programmable economic and verification layer for:
 
 - inference budgets
 - agent spending policies
