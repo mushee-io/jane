@@ -1074,6 +1074,65 @@
   el("topP").onchange=function(){state.topP=Math.max(0,Math.min(1,Number(this.value)||1));this.value=String(state.topP);};
   el("agenticToggle").onchange=function(){state.agentic=this.checked;};
 
+  el("backupButton").onclick=function(){el("backupModal").classList.add("open");};
+  el("backupClose").onclick=function(){el("backupModal").classList.remove("open");};
+  el("backupModal").addEventListener("click",function(e){if(e.target===this)this.classList.remove("open");});
+
+  el("backupExport").onclick=async function(){
+    var passphrase=el("backupPassphrase").value;
+    if(passphrase.length<8){alert("Use a backup passphrase of at least 8 characters.");return;}
+    try{
+      var history=JSON.parse(localStorage.getItem("33jane_history")||"[]");
+      var bundle=await encryptJsonWithPassphrase({createdAt:new Date().toISOString(),history:history},passphrase);
+      var blob=new Blob([JSON.stringify(bundle)],{type:"application/json"});
+      var url=URL.createObjectURL(blob),link=document.createElement("a");
+      link.href=url;link.download="33jane-chat-backup-"+new Date().toISOString().slice(0,10)+".jane";
+      link.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
+    }catch(error){alert(error.message||"Backup export failed");}
+  };
+
+  el("backupImport").onclick=async function(){
+    var passphrase=el("backupPassphrase").value;
+    var file=el("backupImportFile").files&&el("backupImportFile").files[0];
+    if(passphrase.length<8){alert("Enter the backup passphrase.");return;}
+    if(!file){alert("Choose a .jane backup file.");return;}
+    try{
+      var bundle=JSON.parse(await file.text());
+      var restored=await decryptJsonWithPassphrase(bundle,passphrase);
+      if(!restored||!Array.isArray(restored.history))throw new Error("Backup has no chat history");
+      localStorage.setItem("33jane_history",JSON.stringify(restored.history.slice(0,100)));
+      renderHistory();el("shareStatus").textContent="Encrypted backup restored locally.";
+    }catch(error){alert(error.message||"Backup import failed");}
+  };
+
+  el("shareConversation").onclick=async function(){
+    if(!state.messages.length){el("shareStatus").textContent="There is no conversation to share yet.";return;}
+    try{
+      var payload=await createSecureSharePayload({
+        title:(state.messages.find(function(message){return message.role==="user";})||{content:"Shared 33jane chat"}).content.slice(0,80),
+        mode:state.mode,
+        messages:state.messages.slice(-30)
+      });
+      var link=location.origin+location.pathname+"#share="+payload;
+      if(link.length>60000)throw new Error("Conversation is too large for a share link. Export an encrypted backup instead.");
+      await navigator.clipboard.writeText(link);
+      el("shareStatus").textContent="Encrypted share link copied. Anyone with the link can open that shared conversation.";
+    }catch(error){el("shareStatus").textContent=error.message||"Could not create share link.";}
+  };
+
+  async function maybeLoadSharedConversation(){
+    if(!location.hash.startsWith("#share="))return;
+    try{
+      var shared=await openSecureSharePayload(location.hash.slice(7));
+      if(!shared||!Array.isArray(shared.messages))throw new Error("Invalid shared conversation");
+      state.currentId=crypto.randomUUID?crypto.randomUUID():String(Date.now());
+      state.mode=shared.mode||"auto";state.messages=shared.messages.slice(-30);
+      messagesEl.innerHTML="";hero.style.display="none";
+      state.messages.forEach(function(message){addMessage(message.role,message.content);});
+      document.querySelectorAll(".mode").forEach(function(button){button.classList.toggle("active",button.dataset.mode===state.mode);});
+    }catch(error){console.warn("Could not open shared conversation",error);}
+  }
+
   el("vaultButton").onclick=function(){el("vaultModal").classList.add("open");};
   el("vaultClose").onclick=function(){el("vaultModal").classList.remove("open");};
   el("vaultModal").addEventListener("click",function(e){if(e.target===this)this.classList.remove("open");});
@@ -1267,6 +1326,7 @@
     }
   }).catch(function(){el("apiStatus").textContent="router unavailable";});
   renderHistory();
+  maybeLoadSharedConversation();
 })();
 </script>
 </body>
