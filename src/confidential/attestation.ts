@@ -24,7 +24,7 @@ export class ConfidentialComputeService{
     return{
       configured:Boolean(process.env.JANE_ATTESTATION_ENDPOINT),
       expectedMeasurement:Boolean(process.env.JANE_EXPECTED_ENCLAVE_MEASUREMENT),
-      e2eePublicKeyConfigured:Boolean(process.env.JANE_E2EE_PUBLIC_KEY)
+      e2eePublicKeyConfigured:Boolean(process.env.JANE_E2EE_PUBLIC_KEY_JWK || process.env.JANE_E2EE_PUBLIC_KEY_PEM)
     };
   }
 
@@ -60,13 +60,18 @@ export class ConfidentialComputeService{
   }
 
   clientEnvelope(){
-    const publicKey=process.env.JANE_E2EE_PUBLIC_KEY;
-    if(!publicKey)throw new Error("E2EE_PUBLIC_KEY_NOT_CONFIGURED");
+    const jwk=process.env.JANE_E2EE_PUBLIC_KEY_JWK;
+    const pem=process.env.JANE_E2EE_PUBLIC_KEY_PEM;
+    if(!jwk && !pem)throw new Error("E2EE_PUBLIC_KEY_NOT_CONFIGURED");
+    let publicKey: unknown = pem;
+    if(jwk){
+      try{publicKey=JSON.parse(jwk)}catch{throw new Error("E2EE_PUBLIC_KEY_JWK_INVALID")}
+    }
     return{
-      algorithm:"X25519+AES-256-GCM",
+      algorithm:"RSA-OAEP-256+A256GCM",
       publicKey,
       attestationRequired:true,
-      note:"Client must verify attestation before encrypting plaintext for confidential inference."
+      note:"Client verifies attestation, generates a one-time AES-256 key, encrypts plaintext locally, and wraps that key to the enclave public key."
     };
   }
 }
