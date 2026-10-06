@@ -20,6 +20,8 @@ import {
 import { prepareSettlement, settlementStatus, verifySettlement } from "../monad/settlement.js";
 import { verifyPrivacyReceipt, type PrivacyReceipt } from "../privacy/receipt.js";
 import { getTokenUtility, tokenUtilityStatus } from "../token/utility.js";
+import { agentWalletStatus, prepareAgentWalletCreation } from "../agents/onchain-wallet.js";
+import { computeRegistryStatus, prepareComputeRegistration } from "../network/onchain-registry.js";
 import type { JaneRequest } from "../ai/types.js";
 import type { Hex } from "viem";
 
@@ -233,6 +235,46 @@ export function createApiHandler() {
         const id = path.split("/")[3] ?? "";
         const agent = jane.agents.disable(id);
         return agent ? json({ agent }) : json({ error: "AGENT_NOT_FOUND" }, 404);
+      }
+
+      if (request.method === "GET" && path === "/api/agents/wallet/status") {
+        return json(agentWalletStatus());
+      }
+
+      if (request.method === "POST" && path === "/api/agents/wallet/prepare") {
+        const body = await parseBody(request) as {
+          owner?: string;
+          dailyLimitAtomic?: string;
+          perRequestLimitAtomic?: string;
+        };
+        if (!body.owner || !body.dailyLimitAtomic || !body.perRequestLimitAtomic) {
+          return json({ error: "OWNER_AND_BUDGETS_REQUIRED" }, 400);
+        }
+        return json(prepareAgentWalletCreation({
+          owner: body.owner,
+          dailyLimitAtomic: body.dailyLimitAtomic,
+          perRequestLimitAtomic: body.perRequestLimitAtomic
+        }));
+      }
+
+      if (request.method === "GET" && path === "/api/network/registry/status") {
+        return json(computeRegistryStatus());
+      }
+
+      if (request.method === "POST" && path === "/api/network/registry/prepare") {
+        const body = await parseBody(request) as {
+          metadata?: Record<string, unknown>;
+          endpoint?: string;
+          bondNative?: string;
+        };
+        if (!body.metadata || !body.endpoint) {
+          return json({ error: "METADATA_AND_ENDPOINT_REQUIRED" }, 400);
+        }
+        return json(prepareComputeRegistration({
+          metadata: body.metadata,
+          endpoint: body.endpoint,
+          bondNative: body.bondNative
+        }));
       }
 
       if (request.method === "GET" && path === "/api/network/summary") {
