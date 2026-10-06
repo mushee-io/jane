@@ -254,6 +254,21 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal">
+    <div class="modal-head"><h2>Chat Controls</h2><button class="tool" id="settingsClose">Close</button></div>
+    <p class="route-sub">Control Jane's behavior without giving up Auto routing.</p>
+    <label class="route-sub">Custom system prompt</label>
+    <textarea id="systemPrompt" placeholder="Optional instructions for this conversation..."></textarea>
+    <div class="studio-grid">
+      <div class="studio-card"><strong>Temperature</strong><small>0 = precise · 2 = creative</small><input class="policy-input" id="temperature" type="number" min="0" max="2" step="0.05" value="0.35" /></div>
+      <div class="studio-card"><strong>Top P</strong><small>Nucleus sampling</small><input class="policy-input" id="topP" type="number" min="0" max="1" step="0.05" value="1" /></div>
+    </div>
+    <label class="policy-check"><input id="agenticToggle" type="checkbox" /> Agentic Chat — automatically use research and media tools when useful</label>
+    <div class="route-sub">Agentic mode applies Jane's privacy boundaries before public-tool calls.</div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="networkModal">
   <div class="modal">
     <div class="modal-head"><h2>33jane Network Console</h2><button class="tool" id="networkClose">Close</button></div>
