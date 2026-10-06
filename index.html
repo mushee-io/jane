@@ -1000,10 +1000,41 @@
   el("attach").onclick=function(){el("fileInput").click();};
   el("fileInput").onchange=async function(){
     var file=this.files&&this.files[0]; if(!file)return;
-    if(file.size>500000){alert("For this alpha, keep local text attachments below 500 KB.");return;}
-    state.attachedText=await file.text();
-    el("attach").textContent="✓ "+file.name.slice(0,18);
+    if(file.size>3000000){alert("Keep attachments below 3 MB for the web alpha.");this.value="";return;}
+    state.attachedText="";state.attachedImage=null;state.attachedFileName=file.name;
+    try{
+      if(file.type&&file.type.indexOf("image/")===0){
+        var imageBytes=new Uint8Array(await file.arrayBuffer());
+        state.attachedImage={type:"image_base64",data:bytesToB64(imageBytes),mediaType:file.type,detail:"auto"};
+        if(state.mode==="auto")state.mode="vision";
+        document.querySelectorAll(".mode").forEach(function(b){b.classList.toggle("active",b.dataset.mode===state.mode);});
+      }else if(file.type==="application/pdf"||/\.pdf$/i.test(file.name)||/\.docx$/i.test(file.name)){
+        el("attach").textContent="Extracting…";
+        var bytes=new Uint8Array(await file.arrayBuffer());
+        var response=await fetch("/api/documents/extract",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
+          filename:file.name,mimeType:file.type||"application/octet-stream",dataBase64:bytesToB64(bytes),maxChars:250000
+        })});
+        var data=await response.json();
+        if(!response.ok)throw new Error(data.error||"Document extraction failed");
+        state.attachedText=data.text||"";
+      }else{
+        state.attachedText=await file.text();
+      }
+      el("attach").textContent="✓ "+file.name.slice(0,18);
+    }catch(error){
+      state.attachedText="";state.attachedImage=null;state.attachedFileName="";
+      el("attach").textContent="＋ File";
+      alert(error.message||"Could not read attachment");
+    }finally{this.value="";}
   };
+
+  el("settingsButton").onclick=function(){el("settingsModal").classList.add("open");};
+  el("settingsClose").onclick=function(){el("settingsModal").classList.remove("open");};
+  el("settingsModal").addEventListener("click",function(e){if(e.target===this)this.classList.remove("open");});
+  el("systemPrompt").oninput=function(){state.systemPrompt=this.value.slice(0,12000);};
+  el("temperature").onchange=function(){state.temperature=Math.max(0,Math.min(2,Number(this.value)||0));this.value=String(state.temperature);};
+  el("topP").onchange=function(){state.topP=Math.max(0,Math.min(1,Number(this.value)||1));this.value=String(state.topP);};
+  el("agenticToggle").onchange=function(){state.agentic=this.checked;};
 
   el("vaultButton").onclick=function(){el("vaultModal").classList.add("open");};
   el("vaultClose").onclick=function(){el("vaultModal").classList.remove("open");};
