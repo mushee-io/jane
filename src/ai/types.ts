@@ -38,11 +38,17 @@ export interface JaneRequest {
   clientPrivacy?: ClientPrivacySummary;
   clientContext?: ClientContextSummary;
   spendingPolicy?: SpendingPolicy;
+  enterprise?: {
+    orgId: string;
+    actorId?: string;
+    department?: string;
+  };
+  agentAccountId?: string;
 }
 
 export interface ModelProfile {
   id: string;
-  provider: "openai" | "groq" | "openrouter" | "private";
+  provider: "openai" | "groq" | "openrouter" | "private" | "jane" | "network";
   model: string;
   label: string;
   capabilities: TaskKind[];
@@ -54,6 +60,10 @@ export interface ModelProfile {
   privacyScore: number;
   zeroRetention: boolean;
   configured: boolean;
+  endpoint?: string;
+  apiKeyEnv?: string;
+  networkNodeId?: string;
+  region?: string;
 }
 
 export interface ModelTelemetry {
