@@ -23,7 +23,9 @@
   },
   "dependencies": {
     "zod": "^3.25.76",
-    "viem": "^2.37.13"
+    "viem": "^2.37.13",
+    "pdf-parse": "^2.4.5",
+    "mammoth": "^1.13.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
