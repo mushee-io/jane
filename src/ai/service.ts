@@ -9,6 +9,8 @@ import { ProviderMarket } from "../network/provider-market.js";
 import { edgePlan } from "../edge/intelligence.js";
 import { EnterpriseGateway } from "../enterprise/gateway.js";
 import { tokenUtilityStatus } from "../token/utility.js";
+import { catalogSummary } from "../catalog/unified.js";
+import { BenchmarkService } from "../benchmarks/service.js";
 import { checkPrivacyPolicy } from "../privacy/policy.js";
 import { createPrivacyReceipt } from "../privacy/receipt.js";
 import { planSplitInference } from "../privacy/split-planner.js";
@@ -66,6 +68,7 @@ export class JaneAIService {
   readonly agents = new AgentAccountRegistry();
   readonly market = new ProviderMarket();
   readonly enterprise = new EnterpriseGateway();
+  readonly benchmarks = new BenchmarkService();
   private readonly requestModels = new Map<string, string>();
 
   private allModels(): ModelProfile[] {
@@ -103,7 +106,20 @@ export class JaneAIService {
         edgeIntelligence: true,
         enterpriseGateway: true,
         tokenUtility: true,
-        openComputeNetwork: true
+        openComputeNetwork: true,
+        massiveModelCatalog: true,
+        imageStudio: true,
+        videoStudio: true,
+        audioStudio: true,
+        realtimeVoiceFoundation: true,
+        deepResearch: true,
+        charactersAndAgents: true,
+        modelArena: true,
+        confidentialAttestation: true,
+        developerPlatform: true,
+        installableApp: true,
+        teamsAdmin: true,
+        publicBenchmarks: true
       },
       configuredProviders: models.filter((model) => model.configured).map((model) => model.provider),
       availableRoutes: models.map((model) => ({ id: model.id, configured: model.configured })),
@@ -112,7 +128,9 @@ export class JaneAIService {
       agents: { count: this.agents.list().length },
       providerNetwork: this.market.summary(),
       enterprise: { organizations: this.enterprise.listOrgs().length },
-      token: tokenUtilityStatus()
+      token: tokenUtilityStatus(),
+      catalog: catalogSummary(),
+      benchmarks: { runs: this.benchmarks.list(1000).length }
     };
   }
 
@@ -221,6 +239,16 @@ export class JaneAIService {
           + (actualOutput / 1_000_000) * model.outputCostPerMillion;
 
         this.telemetry.recordExecution(model.id, true, completion.latencyMs, cost);
+        this.benchmarks.record({
+          task: liveDecision.task,
+          modelId: model.id,
+          provider: model.provider,
+          latencyMs: completion.latencyMs,
+          costUsd: Number(cost.toFixed(8)),
+          qualityScore: candidate.effectiveQuality,
+          success: true,
+          privacyScore: model.privacyScore
+        });
         this.failover.recordSuccess(model.id);
         if (model.networkNodeId) this.market.record(model.networkNodeId, true);
         this.remember(liveDecision.requestId, model.id);
@@ -325,6 +353,16 @@ export class JaneAIService {
           this.failover.recordFailure(model.id, classification);
         }
         this.telemetry.recordExecution(model.id, false, latencyMs, candidate.estimatedCostUsd);
+        this.benchmarks.record({
+          task: liveDecision.task,
+          modelId: model.id,
+          provider: model.provider,
+          latencyMs,
+          costUsd: candidate.estimatedCostUsd,
+          qualityScore: candidate.effectiveQuality,
+          success: false,
+          privacyScore: model.privacyScore
+        });
         if (model.networkNodeId) this.market.record(model.networkNodeId, false);
       }
     }
