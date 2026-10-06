@@ -74,6 +74,18 @@
     .alt{border-top:1px solid var(--line);padding:9px 0}.alt:first-child{border-top:0}.alt-row{display:flex;justify-content:space-between;font-size:11px;color:#a7aeba}
     .error{color:#ff9aa4}.loading{opacity:.65}
     #fileInput{display:none}
+    .vault-button{border:1px solid var(--line);background:#10141a;color:#c8ced8;height:40px;border-radius:11px;text-align:left;padding:0 12px}
+    .vault-button:hover{border-color:#4b5462}.vault-state{font-size:10px;color:#737c89;margin-left:6px}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;place-items:center;z-index:20;padding:18px}
+    .modal-backdrop.open{display:grid}.modal{width:min(720px,100%);max-height:82vh;overflow:auto;background:#0e1116;border:1px solid #303643;border-radius:18px;box-shadow:var(--shadow);padding:18px}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.modal-head h2{font-size:18px;margin:0}
+    .modal input,.modal textarea{width:100%;background:#0a0c10;border:1px solid var(--line);color:#fff;border-radius:10px;padding:10px;outline:none;margin:5px 0 9px}
+    .modal textarea{min-height:130px;resize:vertical}.vault-actions{display:flex;gap:8px;flex-wrap:wrap}.vault-actions button{border:1px solid var(--line);background:#171b22;color:#d5dae2;border-radius:9px;padding:8px 10px}
+    .vault-actions .primary{background:var(--green);color:#080a0b;border-color:var(--green);font-weight:750}
+    .vault-list{margin-top:14px;border-top:1px solid var(--line)}.vault-entry{padding:10px 2px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px}
+    .vault-entry strong{display:block;font-size:13px}.vault-entry small{color:#737c89}.vault-entry button{border:0;background:transparent;color:#ff8b96}
+    .receipt-hash{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;word-break:break-all;color:#8e97a5}
+    .policy-ok{color:var(--green)}.policy-warn{color:var(--amber)}
     @media(max-width:1100px){.app{grid-template-columns:220px minmax(0,1fr)}.inspector{display:none}}
     @media(max-width:760px){body{overflow:auto}.app{display:block;height:auto;min-height:100vh}.sidebar{display:none}.main{min-height:100vh}.topbar{padding:0 12px;height:auto;min-height:64px}.status{display:none}.modes{padding:10px 0}.mode{padding:7px 8px}.chat{padding:28px 16px}.hero{padding-top:10vh}.hero-grid{grid-template-columns:1fr}.composer-wrap{padding:10px 10px 16px}.message{grid-template-columns:30px 1fr}.avatar{width:29px;height:29px}}
   </style>
@@ -83,6 +95,7 @@
   <aside class="sidebar">
     <div class="brand"><div class="brandmark"><span class="dot"></span>33jane</div><span class="beta">ALPHA</span></div>
     <button class="new-chat" id="newChat">＋ New intelligence session</button>
+    <button class="vault-button" id="vaultButton">◇ 33jane Vault <span class="vault-state" id="vaultState">locked</span></button>
     <div><div class="navlabel">Local history</div><div class="history" id="history"></div></div>
     <div class="sidebar-bottom">
       <div class="privacy-mini"><span class="shield"></span><span>History stays in this browser</span></div>
@@ -99,6 +112,7 @@
         <button class="mode" data-mode="code">Code</button>
         <button class="mode" data-mode="vision">Vision</button>
         <button class="mode" data-mode="private">Private</button>
+        <button class="mode" data-mode="confidential">Confidential</button>
       </div>
       <div class="status"><i></i><span id="apiStatus">router online</span></div>
     </header>
@@ -124,6 +138,7 @@
             <button class="tool" id="attach">＋ File</button>
             <input id="fileInput" type="file" accept=".txt,.md,.json,.csv,.html,.css,.js,.ts,.py" />
             <label class="tool privacy-toggle"><input id="privacyToggle" type="checkbox" checked /> local privacy</label>
+            <label class="tool privacy-toggle"><input id="vaultToggle" type="checkbox" /> use Vault</label>
           </div>
           <button class="send" id="send">Send</button>
         </div>
@@ -153,10 +168,48 @@
       <div class="privacy-list" id="privacyCategories">No sensitive fields detected.</div>
     </div>
     <div class="panel">
+      <div class="panel-title">Context minimizer</div>
+      <div class="metric"><span>Context exposed</span><b id="contextExposure">—</b></div>
+      <div class="metric"><span>Chunks selected</span><b id="contextChunks">—</b></div>
+      <div class="route-sub" id="contextSources">No external context selected.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Split inference</div>
+      <div class="route-main" id="splitState">Single route</div>
+      <div class="route-sub" id="splitReason">33jane will separate private and public work when needed.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Privacy receipt</div>
+      <div class="metric"><span>Retention</span><b id="receiptRetention">—</b></div>
+      <div class="metric"><span>Privacy score</span><b id="receiptPrivacy">—</b></div>
+      <div class="receipt-hash" id="receiptHash">Receipt appears after successful inference.</div>
+    </div>
+    <div class="panel">
       <div class="panel-title">Alternative routes</div>
       <div id="alternatives" class="route-sub">Route a request to compare models.</div>
     </div>
   </aside>
+</div>
+
+<div class="modal-backdrop" id="vaultModal">
+  <div class="modal">
+    <div class="modal-head"><h2>33jane Vault</h2><button class="tool" id="vaultClose">Close</button></div>
+    <div id="vaultLocked">
+      <p class="route-sub">Vault entries are AES-GCM encrypted in this browser. Your passphrase is never stored.</p>
+      <input id="vaultPassphrase" type="password" placeholder="Vault passphrase" autocomplete="off" />
+      <div class="vault-actions"><button class="primary" id="vaultUnlock">Unlock / create Vault</button></div>
+    </div>
+    <div id="vaultUnlocked" style="display:none">
+      <p class="route-sub">Only locally retrieved excerpts are added to inference context. The whole Vault is never sent.</p>
+      <input id="vaultTitle" placeholder="Entry title" />
+      <textarea id="vaultContent" placeholder="Private note, project context, document excerpt..."></textarea>
+      <div class="vault-actions">
+        <button class="primary" id="vaultAdd">Encrypt + save locally</button>
+        <button id="vaultLock">Lock Vault</button>
+      </div>
+      <div class="vault-list" id="vaultList"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -168,7 +221,10 @@
     privacyMap: {},
     lastRequestId: null,
     lastModelId: null,
-    attachedText: ""
+    attachedText: "",
+    vaultKey: null,
+    vaultEntries: [],
+    contextSummary: {originalChars:0,sentChars:0,selectedChunks:0,sources:[]}
   };
 
   var el = function(id){ return document.getElementById(id); };
@@ -217,6 +273,90 @@
       result = result.split(token).join(map[token]);
     });
     return result;
+  }
+
+  function keywords(text){
+    return Array.from(new Set(String(text).toLowerCase().match(/[a-z0-9_]{3,}/g) || []))
+      .filter(function(w){return !["the","and","for","with","this","that","from","have","what","your","into","about","would","could","should"].includes(w);});
+  }
+
+  function minimizeContext(text,query,maxChars){
+    maxChars=maxChars||6000;
+    if(!text) return {text:"",originalChars:0,sentChars:0,selectedChunks:0};
+    var chunks=text.split(/\n\s*\n/).flatMap(function(p){
+      if(p.length<=1200)return [p];
+      var out=[];for(var i=0;i<p.length;i+=1000)out.push(p.slice(i,i+1100));return out;
+    }).filter(function(x){return x.trim();});
+    var terms=keywords(query);
+    var scored=chunks.map(function(chunk,index){
+      var lower=chunk.toLowerCase(), score=0;
+      terms.forEach(function(term){if(lower.indexOf(term)!==-1)score+=1;});
+      return {chunk:chunk,index:index,score:score};
+    }).sort(function(a,b){return b.score-a.score || a.index-b.index;});
+    var chosen=[],total=0;
+    for(var i=0;i<scored.length && chosen.length<6;i++){
+      var item=scored[i]; if(total+item.chunk.length>maxChars && chosen.length)continue;
+      chosen.push(item);total+=item.chunk.length;if(total>=maxChars)break;
+    }
+    if(!chosen.length && chunks.length)chosen=[{chunk:chunks[0],index:0,score:0}];
+    chosen.sort(function(a,b){return a.index-b.index;});
+    var output=chosen.map(function(x){return x.chunk;}).join("\n\n");
+    return {text:output,originalChars:text.length,sentChars:output.length,selectedChunks:chosen.length};
+  }
+
+  function bytesToB64(bytes){
+    var s="";bytes.forEach(function(b){s+=String.fromCharCode(b);});return btoa(s);
+  }
+  function b64ToBytes(value){
+    var s=atob(value),out=new Uint8Array(s.length);for(var i=0;i<s.length;i++)out[i]=s.charCodeAt(i);return out;
+  }
+  async function deriveVaultKey(passphrase,salt){
+    var material=await crypto.subtle.importKey("raw",new TextEncoder().encode(passphrase),"PBKDF2",false,["deriveKey"]);
+    return crypto.subtle.deriveKey({name:"PBKDF2",salt:salt,iterations:210000,hash:"SHA-256"},material,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+  }
+  async function saveVault(){
+    if(!state.vaultKey)return;
+    var iv=crypto.getRandomValues(new Uint8Array(12));
+    var data=new TextEncoder().encode(JSON.stringify(state.vaultEntries));
+    var encrypted=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv:iv},state.vaultKey,data));
+    var current=JSON.parse(localStorage.getItem("33jane_vault_v1")||"null")||{};
+    localStorage.setItem("33jane_vault_v1",JSON.stringify({salt:current.salt,iv:bytesToB64(iv),ciphertext:bytesToB64(encrypted)}));
+    renderVault();
+  }
+  async function unlockVault(passphrase){
+    var stored=JSON.parse(localStorage.getItem("33jane_vault_v1")||"null");
+    var salt=stored&&stored.salt?b64ToBytes(stored.salt):crypto.getRandomValues(new Uint8Array(16));
+    var key=await deriveVaultKey(passphrase,salt);
+    var entries=[];
+    if(stored&&stored.ciphertext){
+      try{
+        var plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64ToBytes(stored.iv)},key,b64ToBytes(stored.ciphertext));
+        entries=JSON.parse(new TextDecoder().decode(plain));
+      }catch(_){throw new Error("Wrong passphrase or corrupted Vault");}
+    }else{
+      localStorage.setItem("33jane_vault_v1",JSON.stringify({salt:bytesToB64(salt),iv:"",ciphertext:""}));
+    }
+    state.vaultKey=key;state.vaultEntries=Array.isArray(entries)?entries:[];
+    el("vaultLocked").style.display="none";el("vaultUnlocked").style.display="block";el("vaultState").textContent="unlocked";
+    renderVault();
+  }
+  function lockVault(){
+    state.vaultKey=null;state.vaultEntries=[];el("vaultLocked").style.display="block";el("vaultUnlocked").style.display="none";el("vaultState").textContent="locked";el("vaultToggle").checked=false;
+  }
+  function renderVault(){
+    var holder=el("vaultList"); if(!holder)return;holder.innerHTML="";
+    if(!state.vaultEntries.length){holder.innerHTML='<div class="route-sub" style="padding:12px 0">Vault is empty.</div>';return;}
+    state.vaultEntries.forEach(function(entry){
+      var row=document.createElement("div");row.className="vault-entry";
+      row.innerHTML='<div><strong>'+escapeHtml(entry.title)+'</strong><small>'+escapeHtml(String(entry.content).slice(0,90))+'</small></div><button>Delete</button>';
+      row.querySelector("button").onclick=async function(){state.vaultEntries=state.vaultEntries.filter(function(x){return x.id!==entry.id;});await saveVault();};
+      holder.appendChild(row);
+    });
+  }
+  function retrieveVault(query){
+    if(!state.vaultKey||!state.vaultEntries.length)return {text:"",originalChars:0,sentChars:0,selectedChunks:0};
+    var combined=state.vaultEntries.map(function(e){return "# "+e.title+"\n"+e.content;}).join("\n\n");
+    return minimizeContext(combined,query,5000);
   }
 
   function addMessage(role,content,meta){
@@ -281,6 +421,37 @@
     el("privacyCategories").textContent = scan.categories.length ? scan.categories.join(" · ") : "No sensitive fields detected.";
   }
 
+  function setContext(summary){
+    state.contextSummary=summary;
+    var exposure=summary.originalChars>0?Math.round(summary.sentChars/summary.originalChars*100):0;
+    el("contextExposure").textContent=summary.originalChars?exposure+"%":"—";
+    el("contextChunks").textContent=summary.selectedChunks||"—";
+    el("contextSources").textContent=summary.sources&&summary.sources.length?summary.sources.join(" · "):"No external context selected.";
+  }
+
+  async function splitPreview(payload){
+    try{
+      var r=await fetch("/api/ai/plan",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
+      var data=await r.json();
+      if(r.ok){
+        el("splitState").textContent=data.recommended?"Split recommended":"Single route";
+        el("splitState").className="route-main "+(data.recommended?"policy-warn":"policy-ok");
+        el("splitReason").textContent=data.reason;
+      }
+      return data;
+    }catch(_){return null;}
+  }
+
+  function showReceipt(receipt){
+    if(!receipt)return;
+    el("receiptRetention").textContent=receipt.zeroRetention?"Zero retention":"Provider policy";
+    el("receiptPrivacy").textContent=Math.round((receipt.privacyScore||0)*100)+"%";
+    el("receiptHash").textContent="sha256:"+receipt.receiptHash;
+    if(receipt.context&&receipt.context.exposurePercent!==null){
+      el("contextExposure").textContent=receipt.context.exposurePercent+"%";
+    }
+  }
+
   async function routePreview(payload){
     try{
       var r = await fetch("/api/ai/route",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
@@ -293,9 +464,24 @@
   async function submit(){
     var raw = promptEl.value.trim();
     if(!raw || send.disabled) return;
-    if(state.attachedText) raw += "\n\nAttached file:\n" + state.attachedText;
 
-    var scan = el("privacyToggle").checked ? redact(raw) : {text:raw,map:{},count:0,categories:[]};
+    var contextParts=[],originalChars=0,sentChars=0,selectedChunks=0,sources=[];
+    if(state.attachedText){
+      var fileContext=minimizeContext(state.attachedText,raw,6000);
+      contextParts.push("Relevant attached-file context:\n"+fileContext.text);
+      originalChars+=fileContext.originalChars;sentChars+=fileContext.sentChars;selectedChunks+=fileContext.selectedChunks;sources.push("attachment");
+    }
+    if(el("vaultToggle").checked&&state.vaultKey){
+      var vaultContext=retrieveVault(raw);
+      if(vaultContext.text){
+        contextParts.push("Relevant private Vault context:\n"+vaultContext.text);
+        originalChars+=vaultContext.originalChars;sentChars+=vaultContext.sentChars;selectedChunks+=vaultContext.selectedChunks;sources.push("vault");
+      }
+    }
+    var inferenceRaw=raw+(contextParts.length?"\n\n"+contextParts.join("\n\n"):"");
+    setContext({originalChars:originalChars,sentChars:sentChars,selectedChunks:selectedChunks,sources:sources});
+
+    var scan = el("privacyToggle").checked ? redact(inferenceRaw) : {text:inferenceRaw,map:{},count:0,categories:[]};
     state.privacyMap = scan.map;
     setPrivacy(scan);
 
@@ -308,10 +494,11 @@
     var payload = {
       mode: state.mode,
       messages: state.messages,
-      clientPrivacy: {applied:el("privacyToggle").checked,redactedCount:scan.count,categories:scan.categories}
+      clientPrivacy: {applied:el("privacyToggle").checked,redactedCount:scan.count,categories:scan.categories},
+      clientContext: state.contextSummary
     };
 
-    await routePreview(payload);
+    await Promise.all([routePreview(payload),splitPreview(payload)]);
     send.textContent = "Thinking…";
 
     try{
@@ -334,6 +521,7 @@
           privateCount:scan.count,
           requestId:data.id
         });
+        showReceipt(data.privacyReceipt);
         saveHistory();
       }
     }catch(err){
@@ -387,13 +575,16 @@
     messagesEl.innerHTML="";hero.style.display="block";promptEl.value="";setPrivacy({count:0,categories:[]});
     el("routeModel").textContent="Waiting for a task";el("routeReason").textContent="Auto balances quality, cost, speed and privacy.";
     el("routeCost").textContent="—";el("routeSavings").textContent="—";el("routeQuality").textContent="—";el("qualityBar").style.width="0";
+    setContext({originalChars:0,sentChars:0,selectedChunks:0,sources:[]});
+    el("splitState").textContent="Single route";el("splitReason").textContent="33jane will separate private and public work when needed.";
+    el("receiptRetention").textContent="—";el("receiptPrivacy").textContent="—";el("receiptHash").textContent="Receipt appears after successful inference.";
   }
 
   document.querySelectorAll(".mode").forEach(function(b){
     b.onclick=function(){
       state.mode=b.dataset.mode;
       document.querySelectorAll(".mode").forEach(function(x){x.classList.toggle("active",x===b);});
-      if(state.mode==="private") el("privacyToggle").checked=true;
+      if(state.mode==="private"||state.mode==="confidential") el("privacyToggle").checked=true;
     };
   });
 
@@ -409,6 +600,23 @@
     state.attachedText=await file.text();
     el("attach").textContent="✓ "+file.name.slice(0,18);
   };
+
+  el("vaultButton").onclick=function(){el("vaultModal").classList.add("open");};
+  el("vaultClose").onclick=function(){el("vaultModal").classList.remove("open");};
+  el("vaultModal").addEventListener("click",function(e){if(e.target===this)this.classList.remove("open");});
+  el("vaultUnlock").onclick=async function(){
+    var pass=el("vaultPassphrase").value;
+    if(pass.length<8){alert("Use a Vault passphrase of at least 8 characters.");return;}
+    try{await unlockVault(pass);el("vaultPassphrase").value="";}catch(err){alert(err.message||"Could not unlock Vault");}
+  };
+  el("vaultAdd").onclick=async function(){
+    var title=el("vaultTitle").value.trim(),content=el("vaultContent").value.trim();
+    if(!title||!content)return;
+    state.vaultEntries.unshift({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),title:title,content:content,createdAt:new Date().toISOString()});
+    el("vaultTitle").value="";el("vaultContent").value="";await saveVault();
+  };
+  el("vaultLock").onclick=lockVault;
+  el("vaultToggle").onchange=function(){if(this.checked&&!state.vaultKey){this.checked=false;el("vaultModal").classList.add("open");}};
 
   fetch("/api/ai/health").then(function(r){return r.json();}).then(function(d){
     el("apiStatus").textContent=d.configuredProviders&&d.configuredProviders.length?d.configuredProviders.length+" providers live":"router online · add provider key";
