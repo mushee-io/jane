@@ -111,6 +111,8 @@
     <button class="vault-button" id="researchButton">⌕ Deep Research <span class="vault-state">private split</span></button>
     <button class="vault-button" id="arenaButton">⚔ Jane Arena <span class="vault-state">compare models</span></button>
     <button class="vault-button" id="charactersButton">◌ Characters & Agents <span class="vault-state">persistent</span></button>
+    <button class="vault-button" id="settingsButton">⚙ Chat Controls <span class="vault-state">system · sampling · agentic</span></button>
+    <button class="vault-button" id="backupButton">↗ Backup & Share <span class="vault-state">encrypted</span></button>
     <button class="vault-button" id="installButton" style="display:none">↓ Install 33jane <span class="vault-state">desktop/mobile</span></button>
     <div><div class="navlabel">Local history</div><div class="history" id="history"></div></div>
     <div class="sidebar-bottom">
@@ -152,7 +154,7 @@
         <div class="composer-bottom">
           <div class="tools">
             <button class="tool" id="attach">＋ File</button>
-            <input id="fileInput" type="file" accept=".txt,.md,.json,.csv,.html,.css,.js,.ts,.py" />
+            <input id="fileInput" type="file" accept=".txt,.md,.json,.csv,.html,.css,.js,.ts,.py,.xml,.yaml,.yml,.pdf,.docx,image/*" />
             <label class="tool privacy-toggle"><input id="privacyToggle" type="checkbox" checked /> local privacy</label>
             <label class="tool privacy-toggle"><input id="vaultToggle" type="checkbox" /> use Vault</label>
           </div>
