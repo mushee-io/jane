@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#08090b" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <script src="/assets/e2ee.js" defer></script>
   <title>33jane — private intelligence router</title>
   <meta name="description" content="33jane routes every request to the best AI for the job while minimizing cost and data exposure." />
   <style>
@@ -90,6 +92,9 @@
     .policy-check{display:flex;align-items:center;gap:7px;color:#9aa2af;font-size:11px;margin:6px 0}.policy-check input{accent-color:var(--green)}
     .chain-button{width:100%;border:1px solid rgba(183,255,74,.3);background:rgba(183,255,74,.08);color:var(--green);border-radius:9px;padding:9px;font-weight:700;margin-top:8px}
     .chain-button:disabled{opacity:.35;cursor:not-allowed}.tx-link{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#8e97a5;word-break:break-all}
+    .studio-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.studio-card{border:1px solid var(--line);background:#0c0f14;border-radius:13px;padding:13px}
+    .studio-card strong{display:block;margin-bottom:6px}.studio-card small{color:#7e8794;line-height:1.4}.studio-output{white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.5;color:#b7bec9;max-height:300px;overflow:auto}
+    .studio-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.studio-tabs button{border:1px solid var(--line);background:#12161d;color:#9da5b2;border-radius:9px;padding:7px 9px}.studio-tabs button.active{background:var(--green);color:#080a0b;border-color:var(--green);font-weight:700}
     @media(max-width:1100px){.app{grid-template-columns:220px minmax(0,1fr)}.inspector{display:none}}
     @media(max-width:760px){body{overflow:auto}.app{display:block;height:auto;min-height:100vh}.sidebar{display:none}.main{min-height:100vh}.topbar{padding:0 12px;height:auto;min-height:64px}.status{display:none}.modes{padding:10px 0}.mode{padding:7px 8px}.chat{padding:28px 16px}.hero{padding-top:10vh}.hero-grid{grid-template-columns:1fr}.composer-wrap{padding:10px 10px 16px}.message{grid-template-columns:30px 1fr}.avatar{width:29px;height:29px}}
   </style>
@@ -101,6 +106,11 @@
     <button class="new-chat" id="newChat">＋ New intelligence session</button>
     <button class="vault-button" id="vaultButton">◇ 33jane Vault <span class="vault-state" id="vaultState">locked</span></button>
     <button class="vault-button" id="networkButton">◎ Network Console <span class="vault-state" id="networkState">loading</span></button>
+    <button class="vault-button" id="studioButton">✦ Creator Studio <span class="vault-state">image · video · audio</span></button>
+    <button class="vault-button" id="researchButton">⌕ Deep Research <span class="vault-state">private split</span></button>
+    <button class="vault-button" id="arenaButton">⚔ Jane Arena <span class="vault-state">compare models</span></button>
+    <button class="vault-button" id="charactersButton">◌ Characters & Agents <span class="vault-state">persistent</span></button>
+    <button class="vault-button" id="installButton" style="display:none">↓ Install 33jane <span class="vault-state">desktop/mobile</span></button>
     <div><div class="navlabel">Local history</div><div class="history" id="history"></div></div>
     <div class="sidebar-bottom">
       <div class="privacy-mini"><span class="shield"></span><span>History stays in this browser</span></div>
@@ -264,6 +274,54 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="studioModal">
+  <div class="modal">
+    <div class="modal-head"><h2>33jane Creator Studio</h2><button class="tool" id="studioClose">Close</button></div>
+    <div class="studio-tabs" id="studioTabs">
+      <button class="active" data-modality="image">Image</button>
+      <button data-modality="video">Video</button>
+      <button data-modality="audio">Audio</button>
+      <button data-modality="speech">Voice</button>
+    </div>
+    <select class="policy-input" id="studioOperation">
+      <option value="text-to-image">Text to image</option>
+      <option value="image-edit">Image edit</option>
+      <option value="upscale">Upscale</option>
+    </select>
+    <textarea class="policy-input" id="studioPrompt" style="min-height:110px" placeholder="Describe what you want 33jane to create..."></textarea>
+    <input class="policy-input" id="studioInputUrl" placeholder="Optional input image/video/audio URL" />
+    <div class="vault-actions"><button class="primary" id="studioGenerate">Route + create</button></div>
+    <div class="panel" style="margin-top:14px"><div class="panel-title">Result</div><div id="studioOutput" class="studio-output">Waiting for a creation request.</div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="researchModal">
+  <div class="modal">
+    <div class="modal-head"><h2>33jane Deep Research</h2><button class="tool" id="researchClose">Close</button></div>
+    <p class="route-sub">Public research is separated from confidential context so search providers do not receive private source material.</p>
+    <textarea class="policy-input" id="researchQuery" style="min-height:120px" placeholder="What should Jane research?"></textarea>
+    <div class="vault-actions"><button class="primary" id="researchRun">Research</button></div>
+    <div class="panel" style="margin-top:14px"><div class="panel-title">Sources</div><div id="researchOutput" class="studio-output">No research run yet.</div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="arenaModal">
+  <div class="modal">
+    <div class="modal-head"><h2>Jane Arena</h2><button class="tool" id="arenaClose">Close</button></div>
+    <p class="route-sub">Run the same prompt across several configured models and compare quality, cost, latency and privacy.</p>
+    <textarea class="policy-input" id="arenaPrompt" style="min-height:120px" placeholder="Prompt to compare..."></textarea>
+    <div class="vault-actions"><button class="primary" id="arenaRun">Run Arena</button></div>
+    <div id="arenaOutput" class="studio-grid" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="charactersModal">
+  <div class="modal">
+    <div class="modal-head"><h2>Characters & Agents</h2><button class="tool" id="charactersClose">Close</button></div>
+    <div id="charactersList" class="studio-grid"><div class="route-sub">Loading characters…</div></div>
+  </div>
+</div>
+
 <script>
 (function(){
   var state = {
@@ -279,7 +337,9 @@
     contextSummary: {originalChars:0,sentChars:0,selectedChunks:0,sources:[]},
     pendingSettlement: null,
     principal: localStorage.getItem("33jane_principal") || ("browser-"+(crypto.randomUUID?crypto.randomUUID():Date.now())),
-    edgeCacheEnabled: true
+    edgeCacheEnabled: true,
+    studioModality: "image",
+    installPrompt: null
   };
 
   var el = function(id){ return document.getElementById(id); };
@@ -873,6 +933,108 @@
   el("settleButton").onclick=settleWithWallet;
   el("policyPrincipal").value=state.principal;
   localStorage.setItem("33jane_principal",state.principal);
+
+  function openModal(id){el(id).classList.add("open");}
+  function closeModal(id){el(id).classList.remove("open");}
+
+  var operationMap={
+    image:[["text-to-image","Text to image"],["image-edit","Image edit"],["inpaint","Inpaint"],["upscale","Upscale"],["background-remove","Remove background"]],
+    video:[["text-to-video","Text to video"],["image-to-video","Image to video"],["extend","Extend"],["upscale","Upscale"]],
+    audio:[["music","Music"],["sfx","Sound effects"],["transcription","Transcription"]],
+    speech:[["tts","Text to speech"],["stt","Speech to text"],["speech-to-speech","Speech to speech"]]
+  };
+  function setStudioModality(modality){
+    state.studioModality=modality;
+    document.querySelectorAll("#studioTabs button").forEach(function(b){b.classList.toggle("active",b.dataset.modality===modality);});
+    var select=el("studioOperation");select.innerHTML="";
+    (operationMap[modality]||[]).forEach(function(item){var option=document.createElement("option");option.value=item[0];option.textContent=item[1];select.appendChild(option);});
+  }
+  document.querySelectorAll("#studioTabs button").forEach(function(b){b.onclick=function(){setStudioModality(b.dataset.modality);};});
+  el("studioButton").onclick=function(){openModal("studioModal");};
+  el("studioClose").onclick=function(){closeModal("studioModal");};
+  el("studioGenerate").onclick=async function(){
+    var button=this;button.disabled=true;button.textContent="Routing…";el("studioOutput").textContent="Finding the best creator model…";
+    try{
+      var r=await fetch("/api/media/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
+        modality:state.studioModality,
+        operation:el("studioOperation").value,
+        prompt:el("studioPrompt").value.trim()||undefined,
+        inputUrl:el("studioInputUrl").value.trim()||undefined,
+        privacy:state.mode==="confidential"?"confidential":state.mode==="private"?"private":"standard"
+      })});
+      var data=await r.json();el("studioOutput").textContent=JSON.stringify(data,null,2);
+    }catch(err){el("studioOutput").textContent=err.message||"Creator request failed."}
+    finally{button.disabled=false;button.textContent="Route + create";}
+  };
+
+  el("researchButton").onclick=function(){openModal("researchModal");};
+  el("researchClose").onclick=function(){closeModal("researchModal");};
+  el("researchRun").onclick=async function(){
+    var query=el("researchQuery").value.trim();if(!query)return;
+    this.disabled=true;this.textContent="Researching…";el("researchOutput").textContent="Searching public sources without exposing private context…";
+    try{
+      var scan=el("privacyToggle").checked?redact(query):{text:query,map:{},count:0,categories:[]};
+      var r=await fetch("/api/research",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
+        mode:state.mode,messages:[{role:"user",content:scan.text}],query:scan.text,
+        clientPrivacy:{applied:el("privacyToggle").checked,redactedCount:scan.count,categories:scan.categories}
+      })});
+      var data=await r.json();
+      if(!r.ok)throw new Error(data.error||"Research failed");
+      var lines=(data.sources||[]).map(function(s,i){return (i+1)+". "+s.title+"\n"+s.url+(s.snippet?"\n"+s.snippet:"");}).join("\n\n");
+      el("researchOutput").textContent=lines||"No sources returned.";
+    }catch(err){el("researchOutput").textContent=err.message||"Research failed."}
+    finally{this.disabled=false;this.textContent="Research";}
+  };
+
+  el("arenaButton").onclick=function(){openModal("arenaModal");};
+  el("arenaClose").onclick=function(){closeModal("arenaModal");};
+  el("arenaRun").onclick=async function(){
+    var prompt=el("arenaPrompt").value.trim();if(!prompt)return;
+    this.disabled=true;this.textContent="Running…";el("arenaOutput").innerHTML='<div class="route-sub">Comparing configured models…</div>';
+    try{
+      var r=await fetch("/api/arena",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:prompt}],maxModels:3})});
+      var data=await r.json();if(!r.ok)throw new Error(data.error||"Arena failed");
+      el("arenaOutput").innerHTML=(data.results||[]).map(function(x){
+        return '<div class="studio-card"><strong>'+escapeHtml(x.label||x.modelId)+'</strong><small>'+escapeHtml(x.provider||"")+' · '+(x.ok?('
+    el("apiStatus").textContent=d.configuredProviders&&d.configuredProviders.length?d.configuredProviders.length+" providers live":"router online · add provider key";
+    el("networkState").textContent=(d.providerNetwork&&d.providerNetwork.nodes?d.providerNetwork.nodes:0)+" nodes";
+    if(d.monad&&d.monad.configured){
+      el("monadNetwork").textContent="chain "+d.monad.chainId;
+      el("monadStatus").textContent="Monad settlement ready · "+d.monad.tokenSymbol;
+    }else{
+      el("monadStatus").textContent="Monad adapter ready in code · configure RPC + settlement contract.";
+    }
+  }).catch(function(){el("apiStatus").textContent="router unavailable";});
+  renderHistory();
+})();
+</script>
+</body>
+</html>+Number(x.costUsd||0).toFixed(5)+' · '+x.latencyMs+'ms'):"failed")+'</small><div class="route-sub" style="margin-top:8px">'+escapeHtml(x.answer||x.error||"")+'</div></div>';
+      }).join("");
+    }catch(err){el("arenaOutput").innerHTML='<div class="route-sub error">'+escapeHtml(err.message||"Arena failed")+'</div>'}
+    finally{this.disabled=false;this.textContent="Run Arena";}
+  };
+
+  async function loadCharacters(){
+    try{
+      var r=await fetch("/api/characters"),data=await r.json();
+      var list=data.characters||[];
+      el("charactersList").innerHTML=list.length?list.map(function(ch){
+        return '<button class="hero-card" data-char="'+escapeHtml(ch.id)+'"><strong>'+escapeHtml(ch.name)+'</strong><small>'+escapeHtml(ch.description||"Persistent Jane character")+' · '+escapeHtml(ch.defaultMode||"auto")+'</small></button>';
+      }).join(""):'<div class="route-sub">No characters configured yet. Admins can add them through /api/characters.</div>';
+      document.querySelectorAll("[data-char]").forEach(function(b){b.onclick=function(){promptEl.value="Talk to "+b.querySelector("strong").textContent+": ";closeModal("charactersModal");promptEl.focus();};});
+    }catch(_){el("charactersList").innerHTML='<div class="route-sub">Characters unavailable.</div>'}
+  }
+  el("charactersButton").onclick=function(){openModal("charactersModal");loadCharacters();};
+  el("charactersClose").onclick=function(){closeModal("charactersModal");};
+
+  ["studioModal","researchModal","arenaModal","charactersModal"].forEach(function(id){el(id).addEventListener("click",function(e){if(e.target===this)closeModal(id);});});
+
+  window.addEventListener("beforeinstallprompt",function(event){event.preventDefault();state.installPrompt=event;el("installButton").style.display="block";});
+  el("installButton").onclick=async function(){
+    if(!state.installPrompt)return;state.installPrompt.prompt();await state.installPrompt.userChoice;state.installPrompt=null;el("installButton").style.display="none";
+  };
+  if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(){});});}
 
   fetch("/api/ai/health").then(function(r){return r.json();}).then(function(d){
     el("apiStatus").textContent=d.configuredProviders&&d.configuredProviders.length?d.configuredProviders.length+" providers live":"router online · add provider key";
