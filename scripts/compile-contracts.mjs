@@ -1,13 +1,15 @@
-import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { readdir, readFile, mkdir, writeFile } from "node:fs/promises";
 import solc from "solc";
 
-const source = await readFile("contracts/JaneInferenceSettlement.sol", "utf8");
+const files = (await readdir("contracts")).filter((name) => name.endsWith(".sol"));
+const sources = {};
+for (const file of files) {
+  sources[file] = { content: await readFile(`contracts/${file}`, "utf8") };
+}
 
 const input = {
   language: "Solidity",
-  sources: {
-    "JaneInferenceSettlement.sol": { content: source }
-  },
+  sources,
   settings: {
     optimizer: { enabled: true, runs: 200 },
     outputSelection: {
@@ -25,20 +27,24 @@ if (errors.length) {
   process.exit(1);
 }
 
-const contract = output.contracts?.["JaneInferenceSettlement.sol"]?.JaneInferenceSettlement;
-if (!contract?.evm?.bytecode?.object) {
-  throw new Error("JaneInferenceSettlement compilation produced no bytecode");
-}
-
 await mkdir("artifacts", { recursive: true });
-await writeFile(
-  "artifacts/JaneInferenceSettlement.json",
-  JSON.stringify({
-    contractName: "JaneInferenceSettlement",
-    compiler: solc.version(),
-    abi: contract.abi,
-    bytecode: `0x${contract.evm.bytecode.object}`
-  }, null, 2)
-);
-
-console.log("Compiled JaneInferenceSettlement -> artifacts/JaneInferenceSettlement.json");
+let count = 0;
+for (const [sourceName, contracts] of Object.entries(output.contracts ?? {})) {
+  for (const [contractName, contract] of Object.entries(contracts)) {
+    const bytecode = contract?.evm?.bytecode?.object;
+    if (!bytecode) continue;
+    await writeFile(
+      `artifacts/${contractName}.json`,
+      JSON.stringify({
+        contractName,
+        sourceName,
+        compiler: solc.version(),
+        abi: contract.abi,
+        bytecode: `0x${bytecode}`
+      }, null, 2)
+    );
+    count += 1;
+    console.log(`Compiled ${contractName} -> artifacts/${contractName}.json`);
+  }
+}
+if (!count) throw new Error("No deployable contract bytecode produced.");
