@@ -1,5 +1,6 @@
 import { JaneAIService } from "../ai/service.js";
 import { feedbackSchema, janeRequestSchema } from "../ai/schemas.js";
+import { verifyPrivacyReceipt, type PrivacyReceipt } from "../privacy/receipt.js";
 
 function json(payload: unknown, status = 200, extra: Record<string,string> = {}): Response {
   return new Response(JSON.stringify(payload, null, 2), {
@@ -73,6 +74,18 @@ export function createApiHandler() {
       if (request.method === "POST" && path === "/api/ai/feedback") {
         const input = feedbackSchema.parse(await parseBody(request));
         return json(jane.feedback(input.requestId, input.signal));
+      }
+
+      if (request.method === "POST" && path === "/api/privacy/verify") {
+        const body = await parseBody(request) as { receipt?: PrivacyReceipt };
+        if (!body.receipt || typeof body.receipt !== "object") {
+          return json({ error: "RECEIPT_REQUIRED" }, 400);
+        }
+        return json({
+          valid: verifyPrivacyReceipt(body.receipt),
+          receiptId: body.receipt.receiptId ?? null,
+          receiptHash: body.receipt.receiptHash ?? null
+        });
       }
 
       return json({ error: "NOT_FOUND", path, method: request.method }, 404);
