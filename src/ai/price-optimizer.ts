@@ -17,7 +17,7 @@ function requiredQuality(task: TaskKind, mode: JaneRequest["mode"]): number {
 
 function supports(model: ModelProfile, task: TaskKind, mode: JaneRequest["mode"]): boolean {
   if (!model.capabilities.includes(task) && !(task === "fast" && model.capabilities.includes("general"))) return false;
-  if (mode === "confidential" && (!model.zeroRetention || model.privacyScore < 0.95 || model.provider !== "private")) return false;
+  if (mode === "confidential" && (!model.zeroRetention || model.privacyScore < 0.95 || !["private", "jane"].includes(model.provider))) return false;
   if (mode === "private" && (!model.zeroRetention || model.privacyScore < 0.90)) return false;
   return true;
 }
