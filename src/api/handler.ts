@@ -177,6 +177,41 @@ export function createApiHandler() {
         return json(jane.health());
       }
 
+      if (request.method === "GET" && path === "/api/readiness") {
+        const health = jane.health();
+        const agentWallet = agentWalletStatus();
+        const computeRegistry = computeRegistryStatus();
+        const token = tokenUtilityStatus();
+        const aiReady = health.configuredProviders.length > 0;
+        const monadReady = health.monad.configured;
+        return json({
+          status: aiReady && monadReady ? "hackathon-ready" : aiReady ? "ai-ready" : "configuration-required",
+          core: {
+            aiProvider: aiReady,
+            privateOrJaneCompute: health.availableRoutes.some((route) =>
+              route.configured && (route.id === "jane-private" || route.id === "jane-compute")
+            ),
+            openAICompatibleApi: true,
+            localPrivacyFirewall: true,
+            encryptedVault: true,
+            edgeIntelligence: true
+          },
+          monad: {
+            settlement: monadReady,
+            agentWalletFactory: agentWallet.configured,
+            computeRegistry: computeRegistry.configured
+          },
+          network: health.providerNetwork,
+          enterpriseOrganizations: health.enterprise.organizations,
+          token: {
+            optional: true,
+            configured: token.configured,
+            symbol: token.symbol,
+            maxSupply: token.maxSupply
+          }
+        });
+      }
+
       if (request.method === "GET" && path === "/api/ai/models") {
         return json({ models: jane.models() });
       }
