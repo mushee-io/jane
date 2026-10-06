@@ -54,6 +54,11 @@ export function createApiHandler() {
         return json(jane.preview(input));
       }
 
+      if (request.method === "POST" && path === "/api/ai/plan") {
+        const input = janeRequestSchema.parse(await parseBody(request));
+        return json(jane.plan(input));
+      }
+
       if (request.method === "POST" && path === "/api/ai/chat") {
         const input = janeRequestSchema.parse(await parseBody(request));
         try {
