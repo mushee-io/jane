@@ -475,6 +475,44 @@
     var material=await crypto.subtle.importKey("raw",new TextEncoder().encode(passphrase),"PBKDF2",false,["deriveKey"]);
     return crypto.subtle.deriveKey({name:"PBKDF2",salt:salt,iterations:210000,hash:"SHA-256"},material,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
   }
+  async function encryptJsonWithPassphrase(value,passphrase){
+    var salt=crypto.getRandomValues(new Uint8Array(16));
+    var iv=crypto.getRandomValues(new Uint8Array(12));
+    var key=await deriveVaultKey(passphrase,salt);
+    var plain=new TextEncoder().encode(JSON.stringify(value));
+    var encrypted=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv:iv},key,plain));
+    return {version:1,salt:bytesToB64(salt),iv:bytesToB64(iv),ciphertext:bytesToB64(encrypted)};
+  }
+  async function decryptJsonWithPassphrase(bundle,passphrase){
+    if(!bundle||bundle.version!==1)throw new Error("Unsupported backup format");
+    var key=await deriveVaultKey(passphrase,b64ToBytes(bundle.salt));
+    var plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64ToBytes(bundle.iv)},key,b64ToBytes(bundle.ciphertext));
+    return JSON.parse(new TextDecoder().decode(plain));
+  }
+  function b64UrlEncodeText(value){
+    return bytesToB64(new TextEncoder().encode(value)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  }
+  function b64UrlDecodeText(value){
+    var normalized=value.replace(/-/g,"+").replace(/_/g,"/");
+    while(normalized.length%4)normalized+="=";
+    return new TextDecoder().decode(b64ToBytes(normalized));
+  }
+  async function createSecureSharePayload(value){
+    var key=await crypto.subtle.generateKey({name:"AES-GCM",length:256},true,["encrypt","decrypt"]);
+    var rawKey=new Uint8Array(await crypto.subtle.exportKey("raw",key));
+    var iv=crypto.getRandomValues(new Uint8Array(12));
+    var plain=new TextEncoder().encode(JSON.stringify(value));
+    var encrypted=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv:iv},key,plain));
+    return b64UrlEncodeText(JSON.stringify({v:1,k:bytesToB64(rawKey),iv:bytesToB64(iv),c:bytesToB64(encrypted)}));
+  }
+  async function openSecureSharePayload(encoded){
+    var bundle=JSON.parse(b64UrlDecodeText(encoded));
+    if(bundle.v!==1)throw new Error("Unsupported share format");
+    var key=await crypto.subtle.importKey("raw",b64ToBytes(bundle.k),{name:"AES-GCM"},false,["decrypt"]);
+    var plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64ToBytes(bundle.iv)},key,b64ToBytes(bundle.c));
+    return JSON.parse(new TextDecoder().decode(plain));
+  }
+
   async function saveVault(){
     if(!state.vaultKey)return;
     var iv=crypto.getRandomValues(new Uint8Array(12));
