@@ -86,6 +86,10 @@
     .vault-entry strong{display:block;font-size:13px}.vault-entry small{color:#737c89}.vault-entry button{border:0;background:transparent;color:#ff8b96}
     .receipt-hash{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;word-break:break-all;color:#8e97a5}
     .policy-ok{color:var(--green)}.policy-warn{color:var(--amber)}
+    .policy-input{width:100%;background:#0a0c10;border:1px solid var(--line);color:#fff;border-radius:8px;padding:7px 8px;margin:4px 0 7px;font-size:12px;outline:none}
+    .policy-check{display:flex;align-items:center;gap:7px;color:#9aa2af;font-size:11px;margin:6px 0}.policy-check input{accent-color:var(--green)}
+    .chain-button{width:100%;border:1px solid rgba(183,255,74,.3);background:rgba(183,255,74,.08);color:var(--green);border-radius:9px;padding:9px;font-weight:700;margin-top:8px}
+    .chain-button:disabled{opacity:.35;cursor:not-allowed}.tx-link{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#8e97a5;word-break:break-all}
     @media(max-width:1100px){.app{grid-template-columns:220px minmax(0,1fr)}.inspector{display:none}}
     @media(max-width:760px){body{overflow:auto}.app{display:block;height:auto;min-height:100vh}.sidebar{display:none}.main{min-height:100vh}.topbar{padding:0 12px;height:auto;min-height:64px}.status{display:none}.modes{padding:10px 0}.mode{padding:7px 8px}.chat{padding:28px 16px}.hero{padding-top:10vh}.hero-grid{grid-template-columns:1fr}.composer-wrap{padding:10px 10px 16px}.message{grid-template-columns:30px 1fr}.avatar{width:29px;height:29px}}
   </style>
@@ -185,6 +189,24 @@
       <div class="receipt-hash" id="receiptHash">Receipt appears after successful inference.</div>
     </div>
     <div class="panel">
+      <div class="panel-title">Agent spending policy</div>
+      <label class="policy-check"><input id="policyEnabled" type="checkbox" /> enforce budget policy</label>
+      <input class="policy-input" id="policyPrincipal" placeholder="principal / agent id" />
+      <div class="metric"><span>Max / request $</span><input class="policy-input" id="policyPerRequest" type="number" min="0.000001" step="0.01" value="0.05" style="width:92px;margin:0" /></div>
+      <div class="metric"><span>Daily budget $</span><input class="policy-input" id="policyDaily" type="number" min="0.000001" step="0.1" value="2" style="width:92px;margin:0" /></div>
+      <label class="policy-check"><input id="policyZeroRetention" type="checkbox" /> require zero retention</label>
+      <div class="metric"><span>Spent today</span><b id="policySpent">—</b></div>
+      <div class="metric"><span>Remaining</span><b id="policyRemaining">—</b></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Monad settlement</div>
+      <div class="metric"><span>Network</span><b id="monadNetwork">—</b></div>
+      <div class="metric"><span>Amount</span><b id="monadAmount">—</b></div>
+      <div class="route-sub" id="monadStatus">Waiting for an inference receipt.</div>
+      <button class="chain-button" id="settleButton" disabled>Settle inference on Monad</button>
+      <div class="tx-link" id="monadTx"></div>
+    </div>
+    <div class="panel">
       <div class="panel-title">Alternative routes</div>
       <div id="alternatives" class="route-sub">Route a request to compare models.</div>
     </div>
@@ -224,7 +246,9 @@
     attachedText: "",
     vaultKey: null,
     vaultEntries: [],
-    contextSummary: {originalChars:0,sentChars:0,selectedChunks:0,sources:[]}
+    contextSummary: {originalChars:0,sentChars:0,selectedChunks:0,sources:[]},
+    pendingSettlement: null,
+    principal: localStorage.getItem("33jane_principal") || ("browser-"+(crypto.randomUUID?crypto.randomUUID():Date.now()))
   };
 
   var el = function(id){ return document.getElementById(id); };
@@ -452,6 +476,106 @@
     }
   }
 
+  function spendingPolicy(){
+    if(!el("policyEnabled").checked)return undefined;
+    var principal=el("policyPrincipal").value.trim()||state.principal;
+    localStorage.setItem("33jane_principal",principal);state.principal=principal;
+    var policy={
+      principal:principal,
+      maxCostUsdPerRequest:Number(el("policyPerRequest").value||0.05),
+      dailyBudgetUsd:Number(el("policyDaily").value||2),
+      requireZeroRetention:el("policyZeroRetention").checked
+    };
+    if(state.mode==="private"||state.mode==="confidential")policy.minPrivacyScore=state.mode==="confidential"?0.95:0.90;
+    return policy;
+  }
+
+  function showPolicy(decision){
+    if(!decision){el("policySpent").textContent="—";el("policyRemaining").textContent="—";return;}
+    el("policySpent").textContent="$"+Number(decision.spentTodayUsd||0).toFixed(4);
+    el("policyRemaining").textContent=decision.remainingTodayUsd===null?"unlimited":"$"+Number(decision.remainingTodayUsd).toFixed(4);
+  }
+
+  function showSettlement(settlement){
+    state.pendingSettlement=settlement||null;
+    if(!settlement){
+      el("monadAmount").textContent="—";
+      el("monadStatus").textContent="Monad settlement adapter is not configured for this deployment.";
+      el("settleButton").disabled=true;
+      return;
+    }
+    el("monadNetwork").textContent="chain "+settlement.chainId;
+    el("monadAmount").textContent="$"+Number(settlement.amountUsd).toFixed(6)+" "+settlement.tokenSymbol;
+    el("monadStatus").textContent="User-signable settlement is ready. Prompt and response remain offchain.";
+    el("settleButton").disabled=false;
+    el("monadTx").textContent="";
+  }
+
+  function hexValue(decimal){
+    try{return "0x"+BigInt(decimal||"0").toString(16);}catch(_){return "0x0";}
+  }
+
+  async function waitWalletReceipt(hash){
+    for(var i=0;i<60;i++){
+      var receipt=await window.ethereum.request({method:"eth_getTransactionReceipt",params:[hash]});
+      if(receipt)return receipt;
+      await new Promise(function(resolve){setTimeout(resolve,1500);});
+    }
+    throw new Error("Transaction confirmation timed out");
+  }
+
+  async function settleWithWallet(){
+    var settlement=state.pendingSettlement;
+    if(!settlement)return;
+    if(!window.ethereum){alert("Connect an EVM wallet in this browser to settle on Monad.");return;}
+    var button=el("settleButton");button.disabled=true;button.textContent="Connecting…";
+    try{
+      var targetChain="0x"+Number(settlement.chainId).toString(16);
+      var current=await window.ethereum.request({method:"eth_chainId"});
+      if(String(current).toLowerCase()!==targetChain.toLowerCase()){
+        try{await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:targetChain}]});}
+        catch(_){throw new Error("Switch your wallet to the configured Monad network, then try again.");}
+      }
+      var accounts=await window.ethereum.request({method:"eth_requestAccounts"});
+      var from=accounts&&accounts[0];if(!from)throw new Error("No wallet account connected.");
+
+      if(settlement.approval){
+        button.textContent="Approve token…";
+        var approvalHash=await window.ethereum.request({method:"eth_sendTransaction",params:[{
+          from:from,to:settlement.approval.to,data:settlement.approval.data,value:hexValue(settlement.approval.value)
+        }]});
+        await waitWalletReceipt(approvalHash);
+      }
+
+      button.textContent="Settle on Monad…";
+      var txHash=await window.ethereum.request({method:"eth_sendTransaction",params:[{
+        from:from,to:settlement.to,data:settlement.data,value:hexValue(settlement.value)
+      }]});
+      el("monadTx").textContent=txHash;
+      el("monadStatus").textContent="Transaction submitted. Waiting for onchain execution receipt…";
+      await waitWalletReceipt(txHash);
+
+      var verified=false;
+      for(var i=0;i<10&&!verified;i++){
+        var r=await fetch("/api/monad/settlement/verify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({txHash:txHash,receiptHash:settlement.receiptHash})});
+        var data=await r.json();
+        if(r.ok&&data.executionReceipt&&data.executionReceipt.verified){
+          verified=true;
+          el("monadStatus").textContent="Verified onchain execution receipt · block "+data.executionReceipt.blockNumber;
+          el("monadStatus").className="route-sub policy-ok";
+          break;
+        }
+        await new Promise(function(resolve){setTimeout(resolve,1500);});
+      }
+      if(!verified)el("monadStatus").textContent="Transaction mined; receipt verification is still pending.";
+    }catch(err){
+      el("monadStatus").textContent=err.message||"Monad settlement failed.";
+      el("monadStatus").className="route-sub error";
+    }finally{
+      button.disabled=false;button.textContent="Settle inference on Monad";
+    }
+  }
+
   async function routePreview(payload){
     try{
       var r = await fetch("/api/ai/route",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
@@ -495,7 +619,8 @@
       mode: state.mode,
       messages: state.messages,
       clientPrivacy: {applied:el("privacyToggle").checked,redactedCount:scan.count,categories:scan.categories},
-      clientContext: state.contextSummary
+      clientContext: state.contextSummary,
+      spendingPolicy: spendingPolicy()
     };
 
     await Promise.all([routePreview(payload),splitPreview(payload)]);
@@ -522,6 +647,8 @@
           requestId:data.id
         });
         showReceipt(data.privacyReceipt);
+        showPolicy(data.spendingPolicy);
+        showSettlement(data.settlement);
         saveHistory();
       }
     }catch(err){
@@ -578,6 +705,7 @@
     setContext({originalChars:0,sentChars:0,selectedChunks:0,sources:[]});
     el("splitState").textContent="Single route";el("splitReason").textContent="33jane will separate private and public work when needed.";
     el("receiptRetention").textContent="—";el("receiptPrivacy").textContent="—";el("receiptHash").textContent="Receipt appears after successful inference.";
+    showSettlement(null);showPolicy(null);el("monadTx").textContent="";
   }
 
   document.querySelectorAll(".mode").forEach(function(b){
@@ -618,8 +746,18 @@
   el("vaultLock").onclick=lockVault;
   el("vaultToggle").onchange=function(){if(this.checked&&!state.vaultKey){this.checked=false;el("vaultModal").classList.add("open");}};
 
+  el("settleButton").onclick=settleWithWallet;
+  el("policyPrincipal").value=state.principal;
+  localStorage.setItem("33jane_principal",state.principal);
+
   fetch("/api/ai/health").then(function(r){return r.json();}).then(function(d){
     el("apiStatus").textContent=d.configuredProviders&&d.configuredProviders.length?d.configuredProviders.length+" providers live":"router online · add provider key";
+    if(d.monad&&d.monad.configured){
+      el("monadNetwork").textContent="chain "+d.monad.chainId;
+      el("monadStatus").textContent="Monad settlement ready · "+d.monad.tokenSymbol;
+    }else{
+      el("monadStatus").textContent="Monad adapter ready in code · configure RPC + settlement contract.";
+    }
   }).catch(function(){el("apiStatus").textContent="router unavailable";});
   renderHistory();
 })();
