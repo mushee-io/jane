@@ -156,7 +156,7 @@ export class JaneAIService {
         this.remember(liveDecision.requestId, model.id);
 
         const committedPolicy = request.spendingPolicy
-          ? this.spending.commit(request.spendingPolicy, cost)
+          ? this.spending.commit(request.spendingPolicy, cost, request.mode)
           : null;
 
         const receipt = createPrivacyReceipt({
