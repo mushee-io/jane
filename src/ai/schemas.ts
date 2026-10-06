@@ -7,7 +7,7 @@ const spendingPolicySchema = z.object({
   maxCostUsdPerRequest: z.number().positive().max(100).optional(),
   dailyBudgetUsd: z.number().positive().max(100000).optional(),
   allowedModes: z.array(janeModeSchema).max(20).optional(),
-  allowedProviders: z.array(z.enum(["openai", "groq", "openrouter", "private"])).max(20).optional(),
+  allowedProviders: z.array(z.enum(["openai", "groq", "openrouter", "private", "jane", "network"])).max(20).optional(),
   requireZeroRetention: z.boolean().optional(),
   minPrivacyScore: z.number().min(0).max(1).optional(),
   maxLatencyScorePenalty: z.number().min(0).max(1).optional()
@@ -31,7 +31,13 @@ export const janeRequestSchema = z.object({
     selectedChunks: z.number().int().min(0).max(10_000),
     sources: z.array(z.string().max(100)).max(100)
   }).optional(),
-  spendingPolicy: spendingPolicySchema.optional()
+  spendingPolicy: spendingPolicySchema.optional(),
+  enterprise: z.object({
+    orgId: z.string().min(1).max(128),
+    actorId: z.string().max(256).optional(),
+    department: z.string().max(128).optional()
+  }).optional(),
+  agentAccountId: z.string().min(1).max(128).optional()
 });
 
 export const feedbackSchema = z.object({
