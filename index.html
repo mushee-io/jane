@@ -336,7 +336,8 @@
   <div class="modal">
     <div class="modal-head"><h2>33jane Deep Research</h2><button class="tool" id="researchClose">Close</button></div>
     <p class="route-sub">Public research is separated from confidential context so search providers do not receive private source material.</p>
-    <textarea class="policy-input" id="researchQuery" style="min-height:120px" placeholder="What should Jane research?"></textarea>
+    <textarea class="policy-input" id="researchQuery" style="min-height:120px" placeholder="What should Jane research? Paste URLs too — Jane can scrape them without exposing private context."></textarea>
+    <label class="policy-check"><input id="researchIncludeX" type="checkbox" /> include X/Twitter search when configured</label>
     <div class="vault-actions"><button class="primary" id="researchRun">Research</button></div>
     <div class="panel" style="margin-top:14px"><div class="panel-title">Research</div><div id="researchOutput" class="studio-output">No research run yet.</div></div>
   </div>
@@ -1258,6 +1259,8 @@
       var scan=el("privacyToggle").checked?redact(query):{text:query,map:{},count:0,categories:[]};
       var response=await fetch("/api/research",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
         mode:state.mode,messages:[{role:"user",content:scan.text}],query:scan.text,
+        urls:(query.match(/https?:\\/\\/[^\\s)\\]}>"']+/gi)||[]).slice(0,5),
+        includeX:el("researchIncludeX").checked,
         clientPrivacy:{applied:el("privacyToggle").checked,redactedCount:scan.count,categories:scan.categories}
       })});
       var data=await response.json();if(!response.ok)throw new Error(data.error||"Research failed");
