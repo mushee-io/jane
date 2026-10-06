@@ -770,6 +770,7 @@
 
   async function submit(){
     var raw = promptEl.value.trim();
+    if(!raw && state.attachedImage) raw = "Analyze this image.";
     if(!raw || send.disabled) return;
 
     var contextParts=[],originalChars=0,sentChars=0,selectedChunks=0,sources=[];
@@ -793,14 +794,22 @@
     setPrivacy(scan);
 
     var userContent = raw;
+    var imageAttachment = state.attachedImage;
     state.messages.push({role:"user",content:scan.text});
-    addMessage("user",userContent);
-    promptEl.value = ""; state.attachedText = "";
+    addMessage("user",userContent + (imageAttachment ? "\n[image attached]" : ""));
+    promptEl.value = ""; state.attachedText = ""; state.attachedImage = null; state.attachedFileName = "";
+    el("attach").textContent = "＋ File";
     send.disabled = true; send.textContent = "Routing…";
+
+    var requestMessages = state.systemPrompt
+      ? [{role:"system",content:state.systemPrompt}].concat(state.messages)
+      : state.messages;
 
     var payload = {
       mode: state.mode,
-      messages: state.messages,
+      messages: requestMessages,
+      attachments: imageAttachment ? [imageAttachment] : undefined,
+      generation: {temperature:state.temperature,topP:state.topP},
       clientPrivacy: {applied:el("privacyToggle").checked,redactedCount:scan.count,categories:scan.categories},
       clientContext: state.contextSummary,
       spendingPolicy: spendingPolicy()
@@ -882,8 +891,11 @@
     }
 
     try{
-      var chatPath=state.characterId?("/api/characters/"+encodeURIComponent(state.characterId)+"/chat"):"/api/ai/chat";
-      var response = await fetch(chatPath,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
+      var chatPath=state.characterId
+        ? ("/api/characters/"+encodeURIComponent(state.characterId)+"/chat")
+        : state.agentic ? "/api/agent/run" : "/api/ai/chat";
+      var requestBody=state.agentic&&!state.characterId?Object.assign({objective:raw,allowWeb:true,allowX:true,allowMedia:true},payload):payload;
+      var response = await fetch(chatPath,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(requestBody)});
       var data = await response.json();
       if(!response.ok){
         if(data.route) setRoute(data.route);
@@ -892,21 +904,25 @@
           : "33jane could not complete this route: " + (data.error || "unknown error");
         addMessage("assistant",message,{privateCount:scan.count});
       }else{
-        var answer = rehydrate(data.answer,scan.map);
-        state.messages.push({role:"assistant",content:data.answer});
-        state.lastRequestId = data.id; state.lastModelId = data.model.id;
+        var answer = rehydrate(data.answer||"",scan.map);
+        state.messages.push({role:"assistant",content:data.answer||""});
+        var finalAgentStep=state.agentic&&data.steps?data.steps.slice().reverse().find(function(step){return step.tool==="chat"&&step.status==="completed";}):null;
+        var agentMeta=finalAgentStep&&finalAgentStep.output?finalAgentStep.output:{};
+        var modelInfo=data.model||agentMeta.model||{};
+        var routeInfo=data.route||agentMeta.route||{};
+        state.lastRequestId = data.id; state.lastModelId = modelInfo.id||"33jane-agentic";
         addMessage("assistant",answer,{
-          model:data.model.id,
-          cost:data.route.actualCostUsd,
-          savings:data.route.estimatedSavingsPercent,
+          model:modelInfo.id||"33jane-agentic",
+          cost:routeInfo.actualCostUsd,
+          savings:routeInfo.estimatedSavingsPercent,
           privateCount:scan.count,
-          requestId:data.id
+          requestId:state.agentic?null:data.id
         });
-        showReceipt(data.privacyReceipt);
+        showReceipt(data.privacyReceipt||agentMeta.privacyReceipt);
         showPolicy(data.spendingPolicy);
         showSettlement(data.settlement);
-        showEdge(data.edgePlan,false);
-        await writeEdgeCache(payload,data);
+        showEdge(data.edgePlan||{task:state.agentic?"agentic":"chat",cacheEligible:false,recommendations:state.agentic?["Jane automatically selected tools for this request."]:[]},false);
+        if(!state.agentic)await writeEdgeCache(payload,data);
         saveHistory();
       }
     }catch(err){
