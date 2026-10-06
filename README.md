@@ -6,7 +6,7 @@
 
 > **The internet should not have to choose an AI. 33jane chooses intelligence for it.**
 
-## Milestones 1–10
+## Milestones 1–15
 
 ### 1. Core 33jane Chat
 The repository now ships a responsive AI chat product with:
@@ -163,9 +163,152 @@ Receipts contain:
 This makes 33jane's privacy behavior inspectable instead of relying only on a marketing promise. Receipts are tamper-detectable and can be checked through `POST /api/privacy/verify`.
 
 
+
+### 11. OpenAI-Compatible API
+33jane now exposes OpenAI-style endpoints so existing applications can switch to the router with minimal integration work.
+
+```text
+GET  /v1/models
+POST /v1/chat/completions
+POST /v1/responses
+```
+
+Virtual model names:
+
+```text
+33jane-auto
+33jane-fast
+33jane-reason
+33jane-code
+33jane-vision
+33jane-private
+33jane-confidential
+```
+
+`/v1/chat/completions` supports standard JSON responses plus SSE-compatible streaming output. The current streaming layer emits the completed upstream answer as compatible chunks; native upstream token streaming can be added later without changing the public API.
+
+Optional API-key protection can be enabled with `JANE_API_KEYS`.
+
+### 12. Advanced Provider Failover
+Provider resilience now includes:
+
+- per-provider request timeouts
+- failure classification
+- automatic fallback to another eligible route
+- circuit breaker after repeated failures
+- cooldown/recovery
+- rate-limit detection
+- provider-unavailable detection
+- authentication/error classification
+- failover telemetry returned with the response
+
+33jane will not silently bypass privacy policy just to make a request succeed.
+
+### 13. Programmable AI Spending Policies
+Users and agents can attach budget/policy constraints to inference:
+
+- maximum USD cost per request
+- daily USD budget
+- allowed 33jane modes
+- allowed provider classes
+- mandatory zero-retention
+- minimum privacy score
+- latency-policy threshold
+
+The in-memory alpha ledger tracks spend per principal/day and rejects routes that violate the configured policy.
+
+Endpoints:
+
+```text
+POST /api/policy/evaluate
+GET  /api/policy/usage?principal=<id>
+```
+
+The browser UI includes an optional agent spending-policy panel.
+
+### 14. Monad Pay-Per-Inference Settlement
+33jane now contains a real EVM/Monad settlement path rather than merely storing a blockchain reference.
+
+`contracts/JaneInferenceSettlement.sol`:
+
+- accepts native-token or ERC-20 settlement
+- transfers payment from the caller to the configured provider treasury
+- prevents the same receipt hash from being settled twice
+- keeps prompts and responses offchain
+- emits a settlement event containing only hashes and payment metadata
+
+After successful inference, 33jane can prepare a user-signable transaction containing:
+
+- receipt hash
+- request hash
+- policy hash
+- provider address
+- settlement token
+- atomic payment amount
+
+For ERC-20 settlement, an approval transaction is generated as well.
+
+API:
+
+```text
+GET  /api/monad/status
+POST /api/monad/settlement/prepare
+POST /api/monad/settlement/verify
+```
+
+The web client can send the approval + settlement transaction through an injected EVM wallet once Monad configuration is present.
+
+Compile:
+
+```bash
+npm run compile:contracts
+```
+
+Deploy after configuring Monad RPC, chain ID and a funded deployment key:
+
+```bash
+npm run compile:contracts
+npm run deploy:monad-settlement
+```
+
+Do not place a deployment private key in browser-visible environment variables.
+
+### 15. Verifiable Onchain Execution Receipts
+The settlement contract emits `InferenceSettled` with:
+
+- payer
+- provider
+- privacy-receipt hash
+- request hash
+- policy hash
+- settlement token
+- amount
+
+33jane verifies the transaction through the configured Monad RPC and returns an execution receipt containing the transaction hash and block number.
+
+This gives the architecture two linked proofs:
+
+```text
+Offchain Privacy Receipt
+        |
+        | hash
+        v
+Monad InferenceSettled event
+        |
+        v
+Verified Execution Receipt
+```
+
+The actual prompt, response, Vault contents and redaction map never need to be written onchain.
+
+
 ## API
 
 ```text
+GET  /v1/models
+POST /v1/chat/completions
+POST /v1/responses
+
 GET  /api/ai/health
 GET  /api/ai/models
 GET  /api/ai/metrics
@@ -173,7 +316,13 @@ POST /api/ai/route
 POST /api/ai/plan
 POST /api/ai/chat
 POST /api/ai/feedback
+
 POST /api/privacy/verify
+POST /api/policy/evaluate
+GET  /api/policy/usage
+GET  /api/monad/status
+POST /api/monad/settlement/prepare
+POST /api/monad/settlement/verify
 ```
 
 ### Route preview
