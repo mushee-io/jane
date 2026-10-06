@@ -6,7 +6,7 @@
 
 > **The internet should not have to choose an AI. 33jane chooses intelligence for it.**
 
-## Milestones 1–5
+## Milestones 1–10
 
 ### 1. Core 33jane Chat
 The repository now ships a responsive AI chat product with:
@@ -83,6 +83,86 @@ This is the beginning of the core principle:
 
 > **No model knows more than it needs to know.**
 
+
+### 6. Local Context Minimization
+Large attachments are reduced in the browser before inference. 33jane scores local chunks against the user's question and sends only the most relevant excerpts.
+
+The client reports:
+- original context size
+- transmitted context size
+- selected chunk count
+- context source
+- exposure percentage
+
+This reduces both privacy exposure and token cost.
+
+### 7. Encrypted 33jane Vault
+33jane now includes a browser-side encrypted knowledge Vault.
+
+- AES-256-GCM encryption through Web Crypto
+- PBKDF2-SHA256 key derivation
+- 210,000 derivation iterations
+- passphrase is never stored
+- Vault content remains encrypted at rest in the browser
+- only locally retrieved excerpts are inserted into inference context
+
+The full Vault is never transmitted to an AI provider.
+
+### 8. Confidential Router
+A new **Confidential** mode imposes stricter routing than ordinary Private mode.
+
+Confidential routes require:
+- local privacy firewall enabled
+- zero-retention provider policy
+- private provider boundary
+- privacy score of at least 0.95
+
+If no configured model satisfies those conditions, 33jane blocks execution rather than silently downgrading privacy.
+
+### 9. Split-Inference Planner
+33jane detects requests that combine confidential source material with public/web research.
+
+It creates isolated boundaries:
+
+```text
+Private extraction
+      |
+      v
+Sanitized public question
+      |
+      v
+Public research
+      |
+      v
+Local merge
+```
+
+The public step is explicitly marked as unable to receive the original sensitive context. The current milestone ships the policy/planning layer; full web-tool orchestration will be connected to supported provider tooling later.
+
+Endpoint:
+
+```text
+POST /api/ai/plan
+```
+
+### 10. Privacy Receipts
+Successful inference now produces a machine-readable Privacy Receipt.
+
+Receipts contain:
+- request hash, never the raw prompt
+- privacy-policy hash
+- selected provider/model
+- zero-retention status
+- provider privacy score
+- number/categories of locally redacted fields
+- context exposure percentage
+- estimated and actual routing cost
+- failover count
+- receipt hash
+
+This makes 33jane's privacy behavior inspectable instead of relying only on a marketing promise.
+
+
 ## API
 
 ```text
@@ -90,6 +170,7 @@ GET  /api/ai/health
 GET  /api/ai/models
 GET  /api/ai/metrics
 POST /api/ai/route
+POST /api/ai/plan
 POST /api/ai/chat
 POST /api/ai/feedback
 ```
