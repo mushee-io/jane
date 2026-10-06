@@ -1034,7 +1034,7 @@
       var data=await response.json();
       if(!response.ok)throw new Error(data.error||"Voice session failed");
       if(!window.JaneVoice)throw new Error("Voice client unavailable");
-      state.voiceConnection=await window.JaneVoice.start(data.session.session,function(stream){
+      state.voiceConnection=await window.JaneVoice.start(data.session,function(stream){
         el("studioVoiceAudio").srcObject=stream;
       });
       button.textContent="Stop realtime voice";
