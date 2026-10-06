@@ -10,6 +10,7 @@ export function modelCatalog(): ModelProfile[] {
   const groqConfigured = Boolean(process.env.GROQ_API_KEY);
   const openrouterConfigured = Boolean(process.env.OPENROUTER_API_KEY);
   const privateConfigured = Boolean(process.env.JANE_PRIVATE_BASE_URL && process.env.JANE_PRIVATE_MODEL);
+  const janeComputeConfigured = Boolean(process.env.JANE_COMPUTE_BASE_URL && process.env.JANE_COMPUTE_MODEL);
 
   return [
     {
@@ -56,6 +57,21 @@ export function modelCatalog(): ModelProfile[] {
       privacyScore: num("OPENROUTER_PRIVACY_SCORE", 0.62),
       zeroRetention: process.env.OPENROUTER_ZERO_RETENTION === "true",
       configured: openrouterConfigured
+    },
+    {
+      id: "jane-compute",
+      provider: "jane",
+      model: process.env.JANE_COMPUTE_MODEL ?? "jane-open-model",
+      label: "33jane Compute",
+      capabilities: ["general", "fast", "reasoning", "code", "vision"],
+      contextWindow: num("JANE_COMPUTE_CONTEXT_WINDOW", 131072),
+      inputCostPerMillion: num("JANE_COMPUTE_INPUT_COST_PER_M", 0.08),
+      outputCostPerMillion: num("JANE_COMPUTE_OUTPUT_COST_PER_M", 0.24),
+      qualityScore: num("JANE_COMPUTE_QUALITY_SCORE", 0.82),
+      latencyScore: num("JANE_COMPUTE_LATENCY_SCORE", 0.86),
+      privacyScore: num("JANE_COMPUTE_PRIVACY_SCORE", 0.92),
+      zeroRetention: process.env.JANE_COMPUTE_ZERO_RETENTION !== "false",
+      configured: janeComputeConfigured
     },
     {
       id: "jane-private",
