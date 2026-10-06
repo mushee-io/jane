@@ -1,4 +1,4 @@
-import type { ChatMessage, CompletionResult, ModelProfile } from "./types.js";
+import type { ChatMessage, CompletionResult, JaneGenerationConfig, JaneImageAttachment, ModelProfile } from "./types.js";
 
 interface ProviderConfig {
   baseUrl: string;
@@ -49,7 +49,11 @@ function configFor(model: ModelProfile): ProviderConfig {
   };
 }
 
-export async function completeChat(model: ModelProfile, messages: ChatMessage[]): Promise<CompletionResult> {
+export async function completeChat(
+  model: ModelProfile,
+  messages: ChatMessage[],
+  options: { generation?: JaneGenerationConfig; attachments?: JaneImageAttachment[] } = {}
+): Promise<CompletionResult> {
   const config = configFor(model);
   if (!config.baseUrl) throw new Error("PROVIDER_BASE_URL_NOT_CONFIGURED");
   if (!["private", "network"].includes(model.provider) && !config.apiKey) throw new Error("PROVIDER_API_KEY_NOT_CONFIGURED");
@@ -66,6 +70,28 @@ export async function completeChat(model: ModelProfile, messages: ChatMessage[])
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(new Error("PROVIDER_TIMEOUT")), timeoutMs);
 
+  const upstreamMessages: Array<Record<string, unknown>> = messages.map((message) => ({ ...message }));
+  if (options.attachments?.length) {
+    const index = [...messages].map((message) => message.role).lastIndexOf("user");
+    if (index >= 0) {
+      const user = messages[index]!;
+      const parts: Array<Record<string, unknown>> = [{ type: "text", text: user.content }];
+      for (const attachment of options.attachments) {
+        const url = attachment.type === "image_url"
+          ? attachment.url
+          : `data:${attachment.mediaType ?? "image/jpeg"};base64,${attachment.data ?? ""}`;
+        if (!url) continue;
+        parts.push({
+          type: "image_url",
+          image_url: { url, detail: attachment.detail ?? "auto" }
+        });
+      }
+      upstreamMessages[index] = { role: "user", content: parts };
+    }
+  }
+
+  const generation = options.generation ?? {};
+
   let response: Response;
   try {
     response = await fetch(`${config.baseUrl.replace(/\/$/, "")}/chat/completions`, {
@@ -74,8 +100,10 @@ export async function completeChat(model: ModelProfile, messages: ChatMessage[])
       signal: controller.signal,
       body: JSON.stringify({
         model: model.model,
-        messages,
-        temperature: 0.35,
+        messages: upstreamMessages,
+        temperature: generation.temperature ?? 0.35,
+        ...(generation.topP !== undefined ? { top_p: generation.topP } : {}),
+        ...(generation.maxOutputTokens !== undefined ? { max_tokens: generation.maxOutputTokens } : {}),
         stream: false
       })
     });

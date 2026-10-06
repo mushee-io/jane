@@ -231,7 +231,10 @@ export class JaneAIService {
 
       const started = Date.now();
       try {
-        const completion = await completeChat(model, effectiveRequest.messages);
+        const completion = await completeChat(model, effectiveRequest.messages, {
+          generation: effectiveRequest.generation,
+          attachments: effectiveRequest.attachments
+        });
         const actualInput = completion.inputTokens ?? liveDecision.estimatedInputTokens;
         const actualOutput = completion.outputTokens ?? liveDecision.estimatedOutputTokens;
         const cost =

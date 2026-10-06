@@ -26,12 +26,15 @@ import type { JaneRequest } from "../ai/types.js";
 import { unifiedCatalog, catalogSummary } from "../catalog/unified.js";
 import { JaneMediaService, type MediaRequest } from "../media/service.js";
 import { JaneResearchService } from "../research/service.js";
+import { JaneDocumentService, type DocumentExtractRequest } from "../documents/service.js";
+import { JaneAgenticService, type AgenticRunRequest } from "../agents/orchestrator.js";
 import { JaneCharacterRegistry, type JaneCharacter } from "../characters/service.js";
 import { JaneArenaService, type ArenaRequest } from "../arena/service.js";
 import { ConfidentialComputeService, type AttestationDocument } from "../confidential/attestation.js";
 import { ConfidentialGateway, type EncryptedInferenceEnvelope } from "../confidential/gateway.js";
 import { TeamService, type JaneTeam, type TeamMember } from "../teams/service.js";
 import { JaneVoiceService, type VoiceSessionRequest } from "../voice/service.js";
+import { JaneEmbeddingService, type EmbeddingRequest } from "../embeddings/service.js";
 import type { Hex } from "viem";
 
 function json(payload: unknown, status = 200, extra: Record<string,string> = {}): Response {
@@ -115,12 +118,15 @@ export function createApiHandler() {
   const jane = new JaneAIService();
   const media = new JaneMediaService();
   const research = new JaneResearchService();
+  const documents = new JaneDocumentService();
+  const agentic = new JaneAgenticService(jane, research, media);
   const characters = new JaneCharacterRegistry();
   const arena = new JaneArenaService();
   const confidential = new ConfidentialComputeService();
   const confidentialGateway = new ConfidentialGateway();
   const teams = new TeamService();
   const voice = new JaneVoiceService();
+  const embeddings = new JaneEmbeddingService();
 
   return async function handle(request: Request): Promise<Response> {
     if (request.method === "OPTIONS") return new Response(null, { status: 204 });
@@ -188,6 +194,86 @@ export function createApiHandler() {
           const status = value.message === "NO_LIVE_AI_PROVIDER_CONFIGURED" ? 503 : 502;
           return openAIError(value.message, status, "upstream_error");
         }
+      }
+
+      if (request.method === "POST" && path === "/v1/images/generations") {
+        const body = await parseBody(request) as Record<string, unknown>;
+        if (!String(body.prompt ?? "").trim()) return openAIError("prompt is required", 400, "invalid_request");
+        const result = await media.generate({
+          modality: "image",
+          operation: "text-to-image",
+          prompt: String(body.prompt),
+          maxCostUsd: typeof body.max_cost_usd === "number" ? body.max_cost_usd : undefined,
+          privacy: body.privacy === "confidential" ? "confidential" : body.privacy === "private" ? "private" : "standard",
+          metadata: {
+            size: body.size,
+            quality: body.quality,
+            style: body.style,
+            n: body.n
+          }
+        });
+        const output = result.output as Record<string, unknown>;
+        return json({
+          created: Math.floor(Date.now() / 1000),
+          data: Array.isArray(output.data) ? output.data : [output],
+          jane: { provider: result.provider, model: result.model, estimated_cost_usd: result.estimatedCostUsd }
+        });
+      }
+
+      if (request.method === "POST" && path === "/v1/video/generations") {
+        const body = await parseBody(request) as Record<string, unknown>;
+        if (!String(body.prompt ?? "").trim()) return openAIError("prompt is required", 400, "invalid_request");
+        return json(await media.generate({
+          modality: "video",
+          operation: body.input_url ? "image-to-video" : "text-to-video",
+          prompt: String(body.prompt),
+          inputUrl: typeof body.input_url === "string" ? body.input_url : undefined,
+          durationSeconds: typeof body.duration === "number" ? body.duration : undefined,
+          maxCostUsd: typeof body.max_cost_usd === "number" ? body.max_cost_usd : undefined,
+          privacy: body.privacy === "confidential" ? "confidential" : body.privacy === "private" ? "private" : "standard",
+          metadata: body
+        }));
+      }
+
+      if (request.method === "POST" && path === "/v1/audio/speech") {
+        const body = await parseBody(request) as Record<string, unknown>;
+        if (!String(body.input ?? "").trim()) return openAIError("input is required", 400, "invalid_request");
+        return json(await media.generate({
+          modality: "speech",
+          operation: "tts",
+          prompt: String(body.input),
+          voice: typeof body.voice === "string" ? body.voice : undefined,
+          format: typeof body.response_format === "string" ? body.response_format : undefined,
+          privacy: body.privacy === "confidential" ? "confidential" : body.privacy === "private" ? "private" : "standard",
+          metadata: { speed: body.speed, model: body.model }
+        }));
+      }
+
+      if (request.method === "POST" && path === "/v1/audio/music") {
+        const body = await parseBody(request) as Record<string, unknown>;
+        if (!String(body.prompt ?? "").trim()) return openAIError("prompt is required", 400, "invalid_request");
+        return json(await media.generate({
+          modality: "audio",
+          operation: "music",
+          prompt: String(body.prompt),
+          durationSeconds: typeof body.duration === "number" ? body.duration : undefined,
+          privacy: body.privacy === "confidential" ? "confidential" : body.privacy === "private" ? "private" : "standard",
+          metadata: body
+        }));
+      }
+
+      if (request.method === "POST" && path === "/v1/embeddings") {
+        const body = await parseBody(request) as EmbeddingRequest;
+        if (typeof body.input !== "string" && !Array.isArray(body.input)) return openAIError("input is required", 400, "invalid_request");
+        return json(await embeddings.create(body));
+      }
+
+      if (request.method === "POST" && path === "/v1/search") {
+        const body = await parseBody(request) as Record<string, unknown>;
+        const query = String(body.query ?? "").trim();
+        if (!query) return openAIError("query is required", 400, "invalid_request");
+        const results = await research.search(query, Math.min(20, Math.max(1, Number(body.max_results ?? 8))));
+        return json({ object: "search.results", data: results });
       }
 
       if (request.method === "GET" && (path === "/api/health" || path === "/api/ai/health")) {
@@ -440,6 +526,23 @@ export function createApiHandler() {
         return json(research.status());
       }
 
+      if (request.method === "POST" && path === "/api/documents/extract") {
+        const body = await parseBody(request) as DocumentExtractRequest;
+        return json(await documents.extract(body));
+      }
+
+      if (request.method === "POST" && path === "/api/agent/plan") {
+        const body = await parseBody(request) as AgenticRunRequest;
+        const parsed = requestContext(request, janeRequestSchema.parse(body));
+        return json({ steps: agentic.plan({ ...body, ...parsed }) });
+      }
+
+      if (request.method === "POST" && path === "/api/agent/run") {
+        const body = await parseBody(request) as AgenticRunRequest;
+        const parsed = requestContext(request, janeRequestSchema.parse(body));
+        return json(await agentic.run({ ...body, ...parsed }));
+      }
+
       if (request.method === "GET" && path === "/api/voice/status") {
         return json(voice.status());
       }
@@ -450,9 +553,21 @@ export function createApiHandler() {
       }
 
       if (request.method === "POST" && path === "/api/research") {
-        const body = await parseBody(request) as JaneRequest & { query?: string; synthesize?: boolean };
+        const body = await parseBody(request) as JaneRequest & {
+          query?: string;
+          synthesize?: boolean;
+          urls?: string[];
+          includeX?: boolean;
+          maxResults?: number;
+        };
         const input = requestContext(request, janeRequestSchema.parse(body));
-        const result = await research.research({ ...input, query: body.query });
+        const result = await research.research({
+          ...input,
+          query: body.query,
+          urls: body.urls,
+          includeX: body.includeX,
+          maxResults: body.maxResults
+        });
         if (body.synthesize === false || result.sources.length === 0) return json(result);
 
         try {

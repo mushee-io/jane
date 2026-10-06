@@ -20,6 +20,20 @@ export interface ClientContextSummary {
   sources: string[];
 }
 
+export interface JaneImageAttachment {
+  type: "image_url" | "image_base64";
+  url?: string;
+  data?: string;
+  mediaType?: string;
+  detail?: "auto" | "low" | "high";
+}
+
+export interface JaneGenerationConfig {
+  temperature?: number;
+  topP?: number;
+  maxOutputTokens?: number;
+}
+
 export interface SpendingPolicy {
   principal: string;
   maxCostUsdPerRequest?: number;
@@ -38,6 +52,8 @@ export interface JaneRequest {
   maxCostUsd?: number;
   clientPrivacy?: ClientPrivacySummary;
   clientContext?: ClientContextSummary;
+  attachments?: JaneImageAttachment[];
+  generation?: JaneGenerationConfig;
   spendingPolicy?: SpendingPolicy;
   enterprise?: {
     orgId: string;

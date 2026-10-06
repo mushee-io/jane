@@ -1,15 +1,27 @@
 import { z } from "zod";
 import type { JaneMode, JaneRequest } from "../ai/types.js";
 
+const openAIContentPartSchema = z.union([
+  z.object({ type: z.literal("text"), text: z.string() }),
+  z.object({
+    type: z.literal("image_url"),
+    image_url: z.object({
+      url: z.string().min(1).max(15_000_000),
+      detail: z.enum(["auto", "low", "high"]).optional()
+    })
+  })
+]);
+
 export const openAIChatSchema = z.object({
   model: z.string().default("33jane-auto"),
   messages: z.array(z.object({
     role: z.enum(["system", "user", "assistant"]),
-    content: z.string()
+    content: z.union([z.string(), z.array(openAIContentPartSchema)])
   })).min(1),
   stream: z.boolean().optional().default(false),
   max_tokens: z.number().int().positive().optional(),
   temperature: z.number().min(0).max(2).optional(),
+  top_p: z.number().min(0).max(1).optional(),
   user: z.string().max(256).optional(),
   jane: z.object({
     maxCostUsd: z.number().positive().max(100).optional(),
@@ -34,9 +46,35 @@ export function modelToMode(model: string): JaneMode {
 }
 
 export function toJaneRequest(input: OpenAIChatInput): JaneRequest {
+  const attachments: NonNullable<JaneRequest["attachments"]> = [];
+  const messages = input.messages.map((message) => {
+    if (typeof message.content === "string") return { role: message.role, content: message.content };
+    const text = message.content
+      .filter((part) => part.type === "text")
+      .map((part) => part.type === "text" ? part.text : "")
+      .join("\n");
+    for (const part of message.content) {
+      if (part.type !== "image_url") continue;
+      const url = part.image_url.url;
+      const match = url.match(/^data:([^;]+);base64,(.+)$/s);
+      if (match) {
+        attachments.push({ type: "image_base64", mediaType: match[1], data: match[2], detail: part.image_url.detail });
+      } else {
+        attachments.push({ type: "image_url", url, detail: part.image_url.detail });
+      }
+    }
+    return { role: message.role, content: text || "[Image attached]" };
+  });
+
   return {
     mode: modelToMode(input.model),
-    messages: input.messages,
+    messages,
+    attachments: attachments.length ? attachments : undefined,
+    generation: {
+      temperature: input.temperature,
+      topP: input.top_p,
+      maxOutputTokens: input.max_tokens
+    },
     maxCostUsd: input.jane?.maxCostUsd,
     clientPrivacy: {
       applied: input.jane?.privacyApplied ?? false,
