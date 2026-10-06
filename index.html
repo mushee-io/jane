@@ -283,13 +283,9 @@
       <button data-modality="audio">Audio</button>
       <button data-modality="speech">Voice</button>
     </div>
-    <select class="policy-input" id="studioOperation">
-      <option value="text-to-image">Text to image</option>
-      <option value="image-edit">Image edit</option>
-      <option value="upscale">Upscale</option>
-    </select>
+    <select class="policy-input" id="studioOperation"></select>
     <textarea class="policy-input" id="studioPrompt" style="min-height:110px" placeholder="Describe what you want 33jane to create..."></textarea>
-    <input class="policy-input" id="studioInputUrl" placeholder="Optional input image/video/audio URL" />
+    <input class="policy-input" id="studioInputUrl" placeholder="Optional input URL" />
     <div class="vault-actions"><button class="primary" id="studioGenerate">Route + create</button></div>
     <div class="panel" style="margin-top:14px"><div class="panel-title">Result</div><div id="studioOutput" class="studio-output">Waiting for a creation request.</div></div>
   </div>
@@ -301,14 +297,14 @@
     <p class="route-sub">Public research is separated from confidential context so search providers do not receive private source material.</p>
     <textarea class="policy-input" id="researchQuery" style="min-height:120px" placeholder="What should Jane research?"></textarea>
     <div class="vault-actions"><button class="primary" id="researchRun">Research</button></div>
-    <div class="panel" style="margin-top:14px"><div class="panel-title">Sources</div><div id="researchOutput" class="studio-output">No research run yet.</div></div>
+    <div class="panel" style="margin-top:14px"><div class="panel-title">Research</div><div id="researchOutput" class="studio-output">No research run yet.</div></div>
   </div>
 </div>
 
 <div class="modal-backdrop" id="arenaModal">
   <div class="modal">
     <div class="modal-head"><h2>Jane Arena</h2><button class="tool" id="arenaClose">Close</button></div>
-    <p class="route-sub">Run the same prompt across several configured models and compare quality, cost, latency and privacy.</p>
+    <p class="route-sub">Run the same prompt across configured models and compare cost, latency, privacy and output.</p>
     <textarea class="policy-input" id="arenaPrompt" style="min-height:120px" placeholder="Prompt to compare..."></textarea>
     <div class="vault-actions"><button class="primary" id="arenaRun">Run Arena</button></div>
     <div id="arenaOutput" class="studio-grid" style="margin-top:14px"></div>
@@ -339,10 +335,9 @@
     principal: localStorage.getItem("33jane_principal") || ("browser-"+(crypto.randomUUID?crypto.randomUUID():Date.now())),
     edgeCacheEnabled: true,
     studioModality: "image",
-    installPrompt: null,
     characterId: null,
     characterName: null,
-    studioInputBase64: null
+    installPrompt: null
   };
 
   var el = function(id){ return document.getElementById(id); };
@@ -856,7 +851,8 @@
   }
 
   function reset(){
-    state.messages=[];state.currentId=crypto.randomUUID?crypto.randomUUID():String(Date.now());state.privacyMap={};state.characterId=null;state.characterName=null;promptEl.placeholder="Ask anything. 33jane will choose the intelligence...";
+    state.messages=[];state.currentId=crypto.randomUUID?crypto.randomUUID():String(Date.now());state.privacyMap={};
+    state.characterId=null;state.characterName=null;promptEl.placeholder="Ask anything. 33jane will choose the intelligence...";
     messagesEl.innerHTML="";hero.style.display="block";promptEl.value="";setPrivacy({count:0,categories:[]});
     el("routeModel").textContent="Waiting for a task";el("routeReason").textContent="Auto balances quality, cost, speed and privacy.";
     el("routeCost").textContent="—";el("routeSavings").textContent="—";el("routeQuality").textContent="—";el("qualityBar").style.width="0";
@@ -934,10 +930,6 @@
   el("networkClose").onclick=function(){el("networkModal").classList.remove("open");};
   el("networkModal").addEventListener("click",function(e){if(e.target===this)this.classList.remove("open");});
 
-  el("settleButton").onclick=settleWithWallet;
-  el("policyPrincipal").value=state.principal;
-  localStorage.setItem("33jane_principal",state.principal);
-
   function openModal(id){el(id).classList.add("open");}
   function closeModal(id){el(id).classList.remove("open");}
 
@@ -947,27 +939,30 @@
     audio:[["music","Music"],["sfx","Sound effects"],["transcription","Transcription"]],
     speech:[["tts","Text to speech"],["stt","Speech to text"],["speech-to-speech","Speech to speech"]]
   };
+
   function setStudioModality(modality){
     state.studioModality=modality;
-    document.querySelectorAll("#studioTabs button").forEach(function(b){b.classList.toggle("active",b.dataset.modality===modality);});
+    document.querySelectorAll("#studioTabs button").forEach(function(button){button.classList.toggle("active",button.dataset.modality===modality);});
     var select=el("studioOperation");select.innerHTML="";
-    (operationMap[modality]||[]).forEach(function(item){var option=document.createElement("option");option.value=item[0];option.textContent=item[1];select.appendChild(option);});
+    (operationMap[modality]||[]).forEach(function(item){
+      var option=document.createElement("option");option.value=item[0];option.textContent=item[1];select.appendChild(option);
+    });
   }
-  document.querySelectorAll("#studioTabs button").forEach(function(b){b.onclick=function(){setStudioModality(b.dataset.modality);};});
+  setStudioModality("image");
+  document.querySelectorAll("#studioTabs button").forEach(function(button){button.onclick=function(){setStudioModality(button.dataset.modality);};});
+
   el("studioButton").onclick=function(){openModal("studioModal");};
   el("studioClose").onclick=function(){closeModal("studioModal");};
   el("studioGenerate").onclick=async function(){
     var button=this;button.disabled=true;button.textContent="Routing…";el("studioOutput").textContent="Finding the best creator model…";
     try{
-      var r=await fetch("/api/media/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
-        modality:state.studioModality,
-        operation:el("studioOperation").value,
-        prompt:el("studioPrompt").value.trim()||undefined,
+      var response=await fetch("/api/media/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
+        modality:state.studioModality,operation:el("studioOperation").value,prompt:el("studioPrompt").value.trim()||undefined,
         inputUrl:el("studioInputUrl").value.trim()||undefined,
         privacy:state.mode==="confidential"?"confidential":state.mode==="private"?"private":"standard"
       })});
-      var data=await r.json();el("studioOutput").textContent=JSON.stringify(data,null,2);
-    }catch(err){el("studioOutput").textContent=err.message||"Creator request failed."}
+      var data=await response.json();el("studioOutput").textContent=JSON.stringify(data,null,2);
+    }catch(error){el("studioOutput").textContent=error.message||"Creator request failed."}
     finally{button.disabled=false;button.textContent="Route + create";}
   };
 
@@ -975,74 +970,67 @@
   el("researchClose").onclick=function(){closeModal("researchModal");};
   el("researchRun").onclick=async function(){
     var query=el("researchQuery").value.trim();if(!query)return;
-    this.disabled=true;this.textContent="Researching…";el("researchOutput").textContent="Searching public sources without exposing private context…";
+    var button=this;button.disabled=true;button.textContent="Researching…";el("researchOutput").textContent="Searching public sources without exposing private context…";
     try{
       var scan=el("privacyToggle").checked?redact(query):{text:query,map:{},count:0,categories:[]};
-      var r=await fetch("/api/research",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
+      var response=await fetch("/api/research",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
         mode:state.mode,messages:[{role:"user",content:scan.text}],query:scan.text,
         clientPrivacy:{applied:el("privacyToggle").checked,redactedCount:scan.count,categories:scan.categories}
       })});
-      var data=await r.json();
-      if(!r.ok)throw new Error(data.error||"Research failed");
-      var lines=(data.sources||[]).map(function(s,i){return (i+1)+". "+s.title+"\n"+s.url+(s.snippet?"\n"+s.snippet:"");}).join("\n\n");
-      el("researchOutput").textContent=lines||"No sources returned.";
-    }catch(err){el("researchOutput").textContent=err.message||"Research failed."}
-    finally{this.disabled=false;this.textContent="Research";}
+      var data=await response.json();if(!response.ok)throw new Error(data.error||"Research failed");
+      var lines=[];if(data.answer)lines.push(data.answer);
+      (data.sources||[]).forEach(function(source,index){lines.push("["+(index+1)+"] "+source.title+"\n"+source.url+(source.snippet?"\n"+source.snippet:""));});
+      el("researchOutput").textContent=lines.join("\n\n")||"No sources returned.";
+    }catch(error){el("researchOutput").textContent=error.message||"Research failed."}
+    finally{button.disabled=false;button.textContent="Research";}
   };
 
   el("arenaButton").onclick=function(){openModal("arenaModal");};
   el("arenaClose").onclick=function(){closeModal("arenaModal");};
   el("arenaRun").onclick=async function(){
     var prompt=el("arenaPrompt").value.trim();if(!prompt)return;
-    this.disabled=true;this.textContent="Running…";el("arenaOutput").innerHTML='<div class="route-sub">Comparing configured models…</div>';
+    var button=this;button.disabled=true;button.textContent="Running…";el("arenaOutput").innerHTML="";
     try{
-      var r=await fetch("/api/arena",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:prompt}],maxModels:3})});
-      var data=await r.json();if(!r.ok)throw new Error(data.error||"Arena failed");
-      el("arenaOutput").innerHTML=(data.results||[]).map(function(x){
-        return '<div class="studio-card"><strong>'+escapeHtml(x.label||x.modelId)+'</strong><small>'+escapeHtml(x.provider||"")+' · '+(x.ok?('
-    el("apiStatus").textContent=d.configuredProviders&&d.configuredProviders.length?d.configuredProviders.length+" providers live":"router online · add provider key";
-    el("networkState").textContent=(d.providerNetwork&&d.providerNetwork.nodes?d.providerNetwork.nodes:0)+" nodes";
-    if(d.monad&&d.monad.configured){
-      el("monadNetwork").textContent="chain "+d.monad.chainId;
-      el("monadStatus").textContent="Monad settlement ready · "+d.monad.tokenSymbol;
-    }else{
-      el("monadStatus").textContent="Monad adapter ready in code · configure RPC + settlement contract.";
-    }
-  }).catch(function(){el("apiStatus").textContent="router unavailable";});
-  renderHistory();
-})();
-</script>
-</body>
-</html>+Number(x.costUsd||0).toFixed(5)+' · '+x.latencyMs+'ms'):"failed")+'</small><div class="route-sub" style="margin-top:8px">'+escapeHtml(x.answer||x.error||"")+'</div></div>';
-      }).join("");
-    }catch(err){el("arenaOutput").innerHTML='<div class="route-sub error">'+escapeHtml(err.message||"Arena failed")+'</div>'}
-    finally{this.disabled=false;this.textContent="Run Arena";}
+      var response=await fetch("/api/arena",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:prompt}],maxModels:3})});
+      var data=await response.json();if(!response.ok)throw new Error(data.error||"Arena failed");
+      (data.results||[]).forEach(function(result){
+        var card=document.createElement("div");card.className="studio-card";
+        var title=document.createElement("strong");title.textContent=result.label||result.modelId;
+        var meta=document.createElement("small");meta.textContent=(result.provider||"")+" · "+(result.ok?("$"+Number(result.costUsd||0).toFixed(5)+" · "+result.latencyMs+"ms"):"failed");
+        var answer=document.createElement("div");answer.className="route-sub";answer.style.marginTop="8px";answer.textContent=result.answer||result.error||"";
+        card.appendChild(title);card.appendChild(meta);card.appendChild(answer);el("arenaOutput").appendChild(card);
+      });
+    }catch(error){
+      var message=document.createElement("div");message.className="route-sub error";message.textContent=error.message||"Arena failed";el("arenaOutput").appendChild(message);
+    }finally{button.disabled=false;button.textContent="Run Arena";}
   };
 
   async function loadCharacters(){
     try{
-      var r=await fetch("/api/characters"),data=await r.json();
-      var list=data.characters||[];
-      el("charactersList").innerHTML=list.length?list.map(function(ch){
-        return '<button class="hero-card" data-char="'+escapeHtml(ch.id)+'"><strong>'+escapeHtml(ch.name)+'</strong><small>'+escapeHtml(ch.description||"Persistent Jane character")+' · '+escapeHtml(ch.defaultMode||"auto")+'</small></button>';
-      }).join(""):'<div class="route-sub">No characters configured yet. Admins can add them through /api/characters.</div>';
-      document.querySelectorAll("[data-char]").forEach(function(b){b.onclick=function(){
-        state.characterId=b.dataset.char;state.characterName=b.querySelector("strong").textContent;
-        promptEl.placeholder="Talk to "+state.characterName+" through 33jane…";
-        closeModal("charactersModal");promptEl.focus();
-      };});
-    }catch(_){el("charactersList").innerHTML='<div class="route-sub">Characters unavailable.</div>'}
+      var response=await fetch("/api/characters");var data=await response.json();var list=data.characters||[];var holder=el("charactersList");holder.innerHTML="";
+      if(!list.length){holder.innerHTML='<div class="route-sub">No characters configured yet. Admins can add them through /api/characters.</div>';return;}
+      list.forEach(function(character){
+        var button=document.createElement("button");button.className="hero-card";
+        var title=document.createElement("strong");title.textContent=character.name;
+        var detail=document.createElement("small");detail.textContent=(character.description||"Persistent Jane character")+" · "+(character.defaultMode||"auto");
+        button.appendChild(title);button.appendChild(detail);
+        button.onclick=function(){state.characterId=character.id;state.characterName=character.name;promptEl.placeholder="Talk to "+character.name+" through 33jane…";closeModal("charactersModal");promptEl.focus();};
+        holder.appendChild(button);
+      });
+    }catch(error){el("charactersList").innerHTML='<div class="route-sub">Characters unavailable.</div>';}
   }
   el("charactersButton").onclick=function(){openModal("charactersModal");loadCharacters();};
   el("charactersClose").onclick=function(){closeModal("charactersModal");};
 
-  ["studioModal","researchModal","arenaModal","charactersModal"].forEach(function(id){el(id).addEventListener("click",function(e){if(e.target===this)closeModal(id);});});
+  ["studioModal","researchModal","arenaModal","charactersModal"].forEach(function(id){el(id).addEventListener("click",function(event){if(event.target===this)closeModal(id);});});
 
   window.addEventListener("beforeinstallprompt",function(event){event.preventDefault();state.installPrompt=event;el("installButton").style.display="block";});
-  el("installButton").onclick=async function(){
-    if(!state.installPrompt)return;state.installPrompt.prompt();await state.installPrompt.userChoice;state.installPrompt=null;el("installButton").style.display="none";
-  };
+  el("installButton").onclick=async function(){if(!state.installPrompt)return;state.installPrompt.prompt();await state.installPrompt.userChoice;state.installPrompt=null;el("installButton").style.display="none";};
   if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(){});});}
+
+    el("settleButton").onclick=settleWithWallet;
+  el("policyPrincipal").value=state.principal;
+  localStorage.setItem("33jane_principal",state.principal);
 
   fetch("/api/ai/health").then(function(r){return r.json();}).then(function(d){
     el("apiStatus").textContent=d.configuredProviders&&d.configuredProviders.length?d.configuredProviders.length+" providers live":"router online · add provider key";
