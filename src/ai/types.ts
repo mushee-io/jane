@@ -29,6 +29,7 @@ export interface SpendingPolicy {
   requireZeroRetention?: boolean;
   minPrivacyScore?: number;
   maxLatencyScorePenalty?: number;
+  allowedRegions?: string[];
 }
 
 export interface JaneRequest {
