@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const janeModeSchema = z.enum(["auto", "fast", "reason", "code", "vision", "private"]);
+export const janeModeSchema = z.enum(["auto", "fast", "reason", "code", "vision", "private", "confidential"]);
 
 export const janeRequestSchema = z.object({
   messages: z.array(z.object({
@@ -13,6 +13,12 @@ export const janeRequestSchema = z.object({
     applied: z.boolean(),
     redactedCount: z.number().int().min(0).max(10_000),
     categories: z.array(z.string().max(80)).max(50)
+  }).optional(),
+  clientContext: z.object({
+    originalChars: z.number().int().min(0).max(10_000_000),
+    sentChars: z.number().int().min(0).max(10_000_000),
+    selectedChunks: z.number().int().min(0).max(10_000),
+    sources: z.array(z.string().max(100)).max(100)
   }).optional()
 });
 
