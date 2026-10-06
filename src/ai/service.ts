@@ -4,11 +4,39 @@ import { completeChat } from "./providers.js";
 import { JaneTelemetry } from "./telemetry.js";
 import { FailoverController, classifyProviderFailure, isRetryableFailure, type FailureRecord } from "./failover.js";
 import { SpendingPolicyEngine } from "../economics/spending-policy.js";
+import { AgentAccountRegistry } from "../agents/accounts.js";
+import { ProviderMarket } from "../network/provider-market.js";
+import { edgePlan } from "../edge/intelligence.js";
+import { EnterpriseGateway } from "../enterprise/gateway.js";
+import { tokenUtilityStatus } from "../token/utility.js";
 import { checkPrivacyPolicy } from "../privacy/policy.js";
 import { createPrivacyReceipt } from "../privacy/receipt.js";
 import { planSplitInference } from "../privacy/split-planner.js";
 import { prepareSettlement, settlementStatus } from "../monad/settlement.js";
 import type { FeedbackSignal, JaneMode, JaneRequest, ModelProfile, RouteDecision, SpendingPolicy } from "./types.js";
+
+function mergePolicies(a: SpendingPolicy | undefined, b: SpendingPolicy | undefined): SpendingPolicy | undefined {
+  if (!a) return b ? { ...b } : undefined;
+  if (!b) return { ...a };
+  const min = (x?: number, y?: number) => x === undefined ? y : y === undefined ? x : Math.min(x, y);
+  const max = (x?: number, y?: number) => x === undefined ? y : y === undefined ? x : Math.max(x, y);
+  const intersect = <T,>(x?: T[], y?: T[]) => {
+    if (!x?.length) return y?.length ? [...y] : undefined;
+    if (!y?.length) return [...x];
+    return x.filter((item) => y.includes(item));
+  };
+
+  return {
+    principal: a.principal || b.principal,
+    maxCostUsdPerRequest: min(a.maxCostUsdPerRequest, b.maxCostUsdPerRequest),
+    dailyBudgetUsd: min(a.dailyBudgetUsd, b.dailyBudgetUsd),
+    allowedModes: intersect(a.allowedModes, b.allowedModes),
+    allowedProviders: intersect(a.allowedProviders, b.allowedProviders),
+    requireZeroRetention: Boolean(a.requireZeroRetention || b.requireZeroRetention),
+    minPrivacyScore: max(a.minPrivacyScore, b.minPrivacyScore),
+    maxLatencyScorePenalty: min(a.maxLatencyScorePenalty, b.maxLatencyScorePenalty)
+  };
+}
 
 function publicModel(model: ModelProfile) {
   return {
@@ -24,7 +52,9 @@ function publicModel(model: ModelProfile) {
     latencyScore: model.latencyScore,
     privacyScore: model.privacyScore,
     zeroRetention: model.zeroRetention,
-    configured: model.configured
+    configured: model.configured,
+    networkNodeId: model.networkNodeId,
+    region: model.region
   };
 }
 
@@ -32,14 +62,21 @@ export class JaneAIService {
   readonly telemetry = new JaneTelemetry();
   readonly failover = new FailoverController();
   readonly spending = new SpendingPolicyEngine();
+  readonly agents = new AgentAccountRegistry();
+  readonly market = new ProviderMarket();
+  readonly enterprise = new EnterpriseGateway();
   private readonly requestModels = new Map<string, string>();
 
+  private allModels(): ModelProfile[] {
+    return [...modelCatalog(), ...this.market.modelProfiles()];
+  }
+
   models() {
-    return modelCatalog().map(publicModel);
+    return this.allModels().map(publicModel);
   }
 
   health() {
-    const models = modelCatalog();
+    const models = this.allModels();
     return {
       status: "ok",
       service: "33jane-ai",
@@ -58,21 +95,39 @@ export class JaneAIService {
         advancedFailover: true,
         programmableSpendingPolicies: true,
         monadSettlement: true,
-        onchainExecutionReceipts: true
+        onchainExecutionReceipts: true,
+        agentWallets: true,
+        providerMarketplace: true,
+        janeOwnedInference: true,
+        edgeIntelligence: true,
+        enterpriseGateway: true,
+        tokenUtility: true,
+        openComputeNetwork: true
       },
       configuredProviders: models.filter((model) => model.configured).map((model) => model.provider),
       availableRoutes: models.map((model) => ({ id: model.id, configured: model.configured })),
       circuits: this.failover.snapshot(models),
-      monad: settlementStatus()
+      monad: settlementStatus(),
+      agents: { count: this.agents.list().length },
+      providerNetwork: this.market.summary(),
+      enterprise: { organizations: this.enterprise.listOrgs().length },
+      token: tokenUtilityStatus()
     };
   }
 
   preview(request: JaneRequest): RouteDecision {
-    return decideRoute(request, modelCatalog(), this.telemetry, false);
+    return decideRoute(request, this.allModels(), this.telemetry, false);
   }
 
   plan(request: JaneRequest) {
-    return planSplitInference(request);
+    return {
+      splitInference: planSplitInference(request),
+      edge: edgePlan(request)
+    };
+  }
+
+  edge(request: JaneRequest) {
+    return edgePlan(request);
   }
 
   evaluatePolicy(policy: SpendingPolicy, mode: JaneMode = "auto") {
@@ -84,9 +139,22 @@ export class JaneAIService {
   }
 
   async chat(request: JaneRequest) {
-    const models = modelCatalog();
-    const liveDecision = decideRoute(request, models, this.telemetry, true);
-    const previewDecision = decideRoute(request, models, this.telemetry, false);
+    let effectiveRequest: JaneRequest = { ...request };
+
+    if (request.agentAccountId) {
+      const agentPolicy = this.agents.spendingPolicy(request.agentAccountId);
+      effectiveRequest = {
+        ...effectiveRequest,
+        spendingPolicy: mergePolicies(effectiveRequest.spendingPolicy, agentPolicy)
+      };
+    }
+
+    const enterpriseDecision = this.enterprise.apply(effectiveRequest);
+    effectiveRequest = enterpriseDecision.request;
+
+    const models = this.allModels();
+    const liveDecision = decideRoute(effectiveRequest, models, this.telemetry, true);
+    const previewDecision = decideRoute(effectiveRequest, models, this.telemetry, false);
     const candidates = [
       ...(liveDecision.selected ? [liveDecision.selected] : []),
       ...liveDecision.alternatives
@@ -114,7 +182,7 @@ export class JaneAIService {
         continue;
       }
 
-      const privacyPolicy = checkPrivacyPolicy(request, model);
+      const privacyPolicy = checkPrivacyPolicy(effectiveRequest, model);
       if (!privacyPolicy.allowed) {
         failures.push({
           modelId: model.id,
@@ -127,8 +195,8 @@ export class JaneAIService {
         continue;
       }
 
-      const spendDecision = request.spendingPolicy
-        ? this.spending.evaluate(request.spendingPolicy, request.mode, candidate)
+      const spendDecision = effectiveRequest.spendingPolicy
+        ? this.spending.evaluate(effectiveRequest.spendingPolicy, effectiveRequest.mode, candidate)
         : null;
       if (spendDecision && !spendDecision.allowed) {
         failures.push({
@@ -153,20 +221,29 @@ export class JaneAIService {
 
         this.telemetry.recordExecution(model.id, true, completion.latencyMs, cost);
         this.failover.recordSuccess(model.id);
+        if (model.networkNodeId) this.market.record(model.networkNodeId, true);
         this.remember(liveDecision.requestId, model.id);
 
-        const committedPolicy = request.spendingPolicy
-          ? this.spending.commit(request.spendingPolicy, cost, request.mode)
+        const committedPolicy = effectiveRequest.spendingPolicy
+          ? this.spending.commit(effectiveRequest.spendingPolicy, cost, effectiveRequest.mode)
           : null;
 
         const receipt = createPrivacyReceipt({
-          request,
+          request: effectiveRequest,
           candidate,
           model,
           upstreamModel: completion.rawModel ?? model.model,
           actualCostUsd: Number(cost.toFixed(8)),
           estimatedSavingsPercent: previewDecision.estimatedSavingsPercent,
           failoverAttempts: failures.length
+        });
+
+        this.enterprise.record(effectiveRequest.enterprise, {
+          requestHash: receipt.requestHash,
+          receiptHash: receipt.receiptHash,
+          provider: model.provider,
+          modelId: model.id,
+          costUsd: Number(cost.toFixed(8))
         });
 
         let settlement = null;
@@ -182,7 +259,7 @@ export class JaneAIService {
           id: liveDecision.requestId,
           object: "33jane.response",
           created: new Date().toISOString(),
-          mode: request.mode,
+          mode: effectiveRequest.mode,
           answer: completion.content,
           model: {
             id: model.id,
@@ -202,7 +279,7 @@ export class JaneAIService {
               score: alternative.score
             }))
           },
-          privacy: request.clientPrivacy ?? {
+          privacy: effectiveRequest.clientPrivacy ?? {
             applied: false,
             redactedCount: 0,
             categories: []
@@ -215,8 +292,21 @@ export class JaneAIService {
           failoverAttempts: failures,
           spendingPolicy: committedPolicy,
           privacyReceipt: receipt,
-          splitPlan: planSplitInference(request),
-          settlement
+          splitPlan: planSplitInference(effectiveRequest),
+          edgePlan: edgePlan(effectiveRequest),
+          settlement,
+          agentAccount: effectiveRequest.agentAccountId
+            ? { id: effectiveRequest.agentAccountId }
+            : null,
+          enterprise: effectiveRequest.enterprise
+            ? {
+                orgId: effectiveRequest.enterprise.orgId,
+                actorId: effectiveRequest.enterprise.actorId ?? null,
+                department: effectiveRequest.enterprise.department ?? null,
+                policyDigest: this.enterprise.policyDigest(effectiveRequest.enterprise.orgId)
+              }
+            : null,
+          providerNetwork: this.market.summary()
         };
       } catch (error) {
         const message = error instanceof Error ? error.message : "PROVIDER_FAILURE";
@@ -234,6 +324,7 @@ export class JaneAIService {
           this.failover.recordFailure(model.id, classification);
         }
         this.telemetry.recordExecution(model.id, false, latencyMs, candidate.estimatedCostUsd);
+        if (model.networkNodeId) this.market.record(model.networkNodeId, false);
       }
     }
 
