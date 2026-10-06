@@ -79,7 +79,10 @@ export class EnterpriseGateway {
       allowedProviders: intersect(existing?.allowedProviders, org.allowedProviders),
       requireZeroRetention: Boolean(existing?.requireZeroRetention || org.requireZeroRetention),
       minPrivacyScore: maxDefined(existing?.minPrivacyScore, org.minPrivacyScore),
-      maxLatencyScorePenalty: existing?.maxLatencyScorePenalty
+      maxLatencyScorePenalty: existing?.maxLatencyScorePenalty,
+      allowedRegions: org.dataRegion
+        ? intersect(existing?.allowedRegions, [org.dataRegion])
+        : existing?.allowedRegions
     };
 
     return {
