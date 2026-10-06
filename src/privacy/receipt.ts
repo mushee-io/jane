@@ -55,7 +55,8 @@ export function createPrivacyReceipt(input: {
     mode: input.request.mode,
     zeroRetentionRequired: input.request.mode === "private" || input.request.mode === "confidential",
     minimumPrivacyScore: input.request.mode === "confidential" ? 0.95 : input.request.mode === "private" ? 0.90 : null,
-    localRedactionApplied: Boolean(input.request.clientPrivacy?.applied)
+    localRedactionApplied: Boolean(input.request.clientPrivacy?.applied),
+    spendingPolicy: input.request.spendingPolicy ?? null
   }));
 
   const context = input.request.clientContext;
