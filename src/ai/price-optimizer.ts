@@ -6,6 +6,7 @@ import { JaneTelemetry } from "./telemetry.js";
 function requiredQuality(task: TaskKind, mode: JaneRequest["mode"]): number {
   if (mode === "reason") return 0.88;
   if (mode === "code") return 0.82;
+  if (mode === "confidential") return 0.84;
   if (mode === "private") return 0.76;
   if (mode === "fast") return 0.68;
   if (task === "reasoning") return 0.83;
@@ -16,6 +17,7 @@ function requiredQuality(task: TaskKind, mode: JaneRequest["mode"]): number {
 
 function supports(model: ModelProfile, task: TaskKind, mode: JaneRequest["mode"]): boolean {
   if (!model.capabilities.includes(task) && !(task === "fast" && model.capabilities.includes("general"))) return false;
+  if (mode === "confidential" && (!model.zeroRetention || model.privacyScore < 0.95 || model.provider !== "private")) return false;
   if (mode === "private" && (!model.zeroRetention || model.privacyScore < 0.90)) return false;
   return true;
 }
@@ -61,7 +63,7 @@ export function decideRoute(
 
   const candidates: RouteCandidate[] = pool.map((item) => {
     const costScore = 1 - ((item.effectiveCostUsd - minCost) / range);
-    const privacyWeight = request.mode === "private" ? 0.34 : 0.07;
+    const privacyWeight = request.mode === "confidential" ? 0.46 : request.mode === "private" ? 0.34 : 0.07;
     const speedWeight = request.mode === "fast" ? 0.30 : 0.12;
     const qualityWeight = request.mode === "reason" ? 0.42 : 0.31;
     const reliabilityWeight = 0.20;
@@ -78,7 +80,8 @@ export function decideRoute(
       costScore > 0.72 ? "low expected cost" : "cost within policy",
       item.reliability > 0.90 ? "high observed reliability" : "learning from outcomes"
     ];
-    if (request.mode === "private" && item.model.zeroRetention) reasons.push("zero-retention route");
+    if ((request.mode === "private" || request.mode === "confidential") && item.model.zeroRetention) reasons.push("zero-retention route");
+    if (request.mode === "confidential") reasons.push("confidential provider boundary");
     if (request.mode === "fast" && item.model.latencyScore > 0.85) reasons.push("low-latency route");
 
     return {
