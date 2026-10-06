@@ -287,7 +287,8 @@
     <select class="policy-input" id="studioOperation"></select>
     <textarea class="policy-input" id="studioPrompt" style="min-height:110px" placeholder="Describe what you want 33jane to create..."></textarea>
     <input class="policy-input" id="studioInputUrl" placeholder="Optional input URL" />
-    <div class="vault-actions"><button class="primary" id="studioGenerate">Route + create</button></div>
+    <div class="vault-actions"><button class="primary" id="studioGenerate">Route + create</button><button id="studioVoiceLive" style="display:none">Start realtime voice</button></div>
+    <audio id="studioVoiceAudio" autoplay></audio>
     <div class="panel" style="margin-top:14px"><div class="panel-title">Result</div><div id="studioOutput" class="studio-output">Waiting for a creation request.</div></div>
   </div>
 </div>
@@ -338,7 +339,8 @@
     studioModality: "image",
     characterId: null,
     characterName: null,
-    installPrompt: null
+    installPrompt: null,
+    voiceConnection: null
   };
 
   var el = function(id){ return document.getElementById(id); };
@@ -1002,6 +1004,7 @@
     state.studioModality=modality;
     document.querySelectorAll("#studioTabs button").forEach(function(button){button.classList.toggle("active",button.dataset.modality===modality);});
     var select=el("studioOperation");select.innerHTML="";
+    el("studioVoiceLive").style.display=modality==="speech"?"inline-block":"none";
     (operationMap[modality]||[]).forEach(function(item){
       var option=document.createElement("option");option.value=item[0];option.textContent=item[1];select.appendChild(option);
     });
@@ -1011,6 +1014,39 @@
 
   el("studioButton").onclick=function(){openModal("studioModal");};
   el("studioClose").onclick=function(){closeModal("studioModal");};
+  el("studioVoiceLive").onclick=async function(){
+    var button=this;
+    if(state.voiceConnection){
+      state.voiceConnection.stop();
+      state.voiceConnection=null;
+      button.textContent="Start realtime voice";
+      el("studioOutput").textContent="Realtime voice stopped.";
+      return;
+    }
+    button.disabled=true;
+    button.textContent="Connecting…";
+    try{
+      var response=await fetch("/api/voice/session",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
+        voice:"auto",
+        mode:state.mode==="confidential"?"confidential":state.mode==="private"?"private":"standard",
+        instructions:el("studioPrompt").value.trim()||"Be concise and helpful."
+      })});
+      var data=await response.json();
+      if(!response.ok)throw new Error(data.error||"Voice session failed");
+      if(!window.JaneVoice)throw new Error("Voice client unavailable");
+      state.voiceConnection=await window.JaneVoice.start(data.session.session,function(stream){
+        el("studioVoiceAudio").srcObject=stream;
+      });
+      button.textContent="Stop realtime voice";
+      el("studioOutput").textContent="Realtime voice connected through "+(data.provider||"configured provider")+".";
+    }catch(error){
+      el("studioOutput").textContent=error.message||"Realtime voice failed.";
+      button.textContent="Start realtime voice";
+    }finally{
+      button.disabled=false;
+    }
+  };
+
   el("studioGenerate").onclick=async function(){
     var button=this;button.disabled=true;button.textContent="Routing…";el("studioOutput").textContent="Finding the best creator model…";
     try{
