@@ -23,6 +23,7 @@ export class ConfidentialComputeService{
   status(){
     return{
       configured:Boolean(process.env.JANE_ATTESTATION_ENDPOINT),
+      verifierConfigured:Boolean(process.env.JANE_ATTESTATION_VERIFY_ENDPOINT),
       expectedMeasurement:Boolean(process.env.JANE_EXPECTED_ENCLAVE_MEASUREMENT),
       e2eePublicKeyConfigured:Boolean(process.env.JANE_E2EE_PUBLIC_KEY_JWK || process.env.JANE_E2EE_PUBLIC_KEY_PEM)
     };
@@ -56,6 +57,28 @@ export class ConfidentialComputeService{
         publicKey:document.publicKey??null,
         expiresAt:document.expiresAt
       })).digest("hex")
+    };
+  }
+
+  async verifyTrusted(document:AttestationDocument){
+    const local=this.verify(document);
+    const endpoint=process.env.JANE_ATTESTATION_VERIFY_ENDPOINT;
+    if(!endpoint){
+      return{...local,hardwareVerified:false,valid:false,reason:"ATTESTATION_VERIFIER_NOT_CONFIGURED"};
+    }
+    const key=process.env.JANE_ATTESTATION_VERIFY_API_KEY;
+    const response=await fetch(endpoint,{
+      method:"POST",
+      headers:{"content-type":"application/json",...(key?{authorization:`Bearer ${key}`}:{})},
+      body:JSON.stringify({document,expectedMeasurement:process.env.JANE_EXPECTED_ENCLAVE_MEASUREMENT})
+    });
+    const body=await response.json().catch(()=>({})) as {valid?:boolean;reason?:string};
+    const hardwareVerified=Boolean(response.ok&&body.valid);
+    return{
+      ...local,
+      hardwareVerified,
+      valid:Boolean(local.valid&&hardwareVerified),
+      reason:hardwareVerified?null:(body.reason??`ATTESTATION_VERIFIER_ERROR:${response.status}`)
     };
   }
 
