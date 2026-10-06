@@ -81,10 +81,10 @@ export class SpendingPolicyEngine {
     };
   }
 
-  commit(policy: SpendingPolicy, amountUsd: number): PolicyDecision {
+  commit(policy: SpendingPolicy, amountUsd: number, mode: JaneMode = "auto"): PolicyDecision {
     const key = this.key(policy.principal);
     this.dailySpend.set(key, (this.dailySpend.get(key) ?? 0) + Math.max(0, amountUsd));
-    return this.evaluate(policy, "auto");
+    return this.evaluate(policy, mode);
   }
 
   snapshot(principal: string) {
