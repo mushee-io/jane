@@ -758,7 +758,24 @@
       spendingPolicy: spendingPolicy()
     };
 
-    await Promise.all([routePreview(payload),splitPreview(payload),edgePreview(payload)]);
+    var e2eeReady=false;
+    if(state.mode==="confidential"&&!state.characterId&&window.JaneE2EE){
+      try{
+        var confidentialStatusResponse=await fetch("/api/confidential/gateway/status");
+        var confidentialStatus=await confidentialStatusResponse.json();
+        e2eeReady=Boolean(confidentialStatusResponse.ok&&confidentialStatus.configured);
+      }catch(_){}
+    }
+
+    if(e2eeReady){
+      el("routeModel").textContent="Attested E2EE enclave";
+      el("routeReason").textContent="Plaintext stays in this browser; the 33jane gateway receives ciphertext only.";
+      el("splitState").textContent="Enclave route";
+      el("splitReason").textContent="Routing and inference are delegated inside the confidential boundary.";
+      showEdge({task:"confidential",cacheEligible:false,recommendations:["server-side plaintext previews disabled for E2EE"]},false);
+    }else{
+      await Promise.all([routePreview(payload),splitPreview(payload),edgePreview(payload)]);
+    }
     send.textContent = "Thinking…";
 
     var cached=await readEdgeCache(payload);
@@ -774,6 +791,46 @@
       showReceipt(cached.privacyReceipt);
       showEdge({task:"cached",cacheEligible:true,recommendations:["served from device-local session cache; no provider request was made"]},true);
       send.disabled=false;send.textContent="Send";promptEl.focus();saveHistory();return;
+    }
+
+    if(e2eeReady){
+      try{
+        send.textContent="Encrypting…";
+        var envelopeResponse=await fetch("/api/confidential/envelope");
+        var envelopeConfig=await envelopeResponse.json();
+        if(!envelopeResponse.ok)throw new Error(envelopeConfig.error||"Enclave attestation failed");
+
+        var encryptedSession=await window.JaneE2EE.createSession(payload,envelopeConfig);
+        send.textContent="Confidential inference…";
+        var gatewayResponse=await fetch("/api/confidential/infer",{
+          method:"POST",
+          headers:{"content-type":"application/json"},
+          body:JSON.stringify(encryptedSession.envelope)
+        });
+        var gatewayData=await gatewayResponse.json();
+        if(!gatewayResponse.ok)throw new Error(gatewayData.error||"Confidential gateway failed");
+
+        var encryptedReply=gatewayData.encryptedResponse||gatewayData.response||gatewayData;
+        var decrypted=await encryptedSession.decryptResponse(encryptedReply);
+        var privateAnswer=String(decrypted.answer||decrypted.text||"");
+        if(!privateAnswer)throw new Error("Encrypted enclave returned no answer");
+
+        state.messages.push({role:"assistant",content:privateAnswer});
+        addMessage("assistant",rehydrate(privateAnswer,scan.map),{
+          model:decrypted.model||"33jane-e2ee",
+          cost:decrypted.costUsd,
+          savings:decrypted.savingsPercent,
+          privateCount:scan.count
+        });
+        if(gatewayData.privacyReceipt)showReceipt(gatewayData.privacyReceipt);
+        if(gatewayData.settlement)showSettlement(gatewayData.settlement);
+        saveHistory();
+      }catch(error){
+        addMessage("assistant","Confidential E2EE route failed: "+(error.message||"unknown error"),{privateCount:scan.count});
+      }finally{
+        send.disabled=false;send.textContent="Send";promptEl.focus();
+      }
+      return;
     }
 
     try{
