@@ -10,7 +10,8 @@ const spendingPolicySchema = z.object({
   allowedProviders: z.array(z.enum(["openai", "groq", "openrouter", "private", "jane", "network"])).max(20).optional(),
   requireZeroRetention: z.boolean().optional(),
   minPrivacyScore: z.number().min(0).max(1).optional(),
-  maxLatencyScorePenalty: z.number().min(0).max(1).optional()
+  maxLatencyScorePenalty: z.number().min(0).max(1).optional(),
+  allowedRegions: z.array(z.string().min(1).max(128)).max(50).optional()
 });
 
 export const janeRequestSchema = z.object({
