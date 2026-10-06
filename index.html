@@ -254,6 +254,28 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="backupModal">
+  <div class="modal">
+    <div class="modal-head"><h2>Encrypted Backup & Share</h2><button class="tool" id="backupClose">Close</button></div>
+    <div class="panel">
+      <div class="panel-title">Encrypted chat backup</div>
+      <p class="route-sub">Encrypt local chat history before export. Your passphrase remains in this browser.</p>
+      <input id="backupPassphrase" type="password" placeholder="Backup passphrase (8+ characters)" autocomplete="off" />
+      <input id="backupImportFile" type="file" accept=".jane,.json" />
+      <div class="vault-actions">
+        <button class="primary" id="backupExport">Export encrypted backup</button>
+        <button id="backupImport">Import encrypted backup</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Private conversation share</div>
+      <p class="route-sub">Create a locally encrypted link for the current conversation. The server receives no conversation content from the URL fragment.</p>
+      <div class="vault-actions"><button class="primary" id="shareConversation">Copy encrypted share link</button></div>
+      <div class="receipt-hash" id="shareStatus">No share link created.</div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="settingsModal">
   <div class="modal">
     <div class="modal-head"><h2>Chat Controls</h2><button class="tool" id="settingsClose">Close</button></div>
