@@ -44,6 +44,17 @@ export const janeSettlementAbi = [
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as Address;
 
+const erc20ApprovalAbi = [{
+  type: "function",
+  name: "approve",
+  stateMutability: "nonpayable",
+  inputs: [
+    { name: "spender", type: "address" },
+    { name: "amount", type: "uint256" }
+  ],
+  outputs: [{ name: "", type: "bool" }]
+}] as const;
+
 function envConfig() {
   const rpcUrl = process.env.MONAD_RPC_URL ?? "";
   const contract = process.env.MONAD_SETTLEMENT_CONTRACT ?? "";
@@ -108,11 +119,22 @@ export function prepareSettlement(receipt: PrivacyReceipt) {
     ]
   });
 
+  const approval = config.token === ZERO_ADDRESS ? null : {
+    to: config.token,
+    data: encodeFunctionData({
+      abi: erc20ApprovalAbi,
+      functionName: "approve",
+      args: [config.contract, amount]
+    }),
+    value: "0"
+  };
+
   return {
     chainId: config.chainId,
     to: config.contract,
     data,
     value: config.token === ZERO_ADDRESS ? amount.toString() : "0",
+    approval,
     token: config.token,
     tokenSymbol: config.symbol,
     tokenDecimals: config.decimals,
@@ -125,7 +147,7 @@ export function prepareSettlement(receipt: PrivacyReceipt) {
     policyHash: `0x${receipt.policyHash}`,
     note: config.token === ZERO_ADDRESS
       ? "Native-token settlement uses amountUsd as token units only for demo configuration; use a stable settlement token for production."
-      : "Approve the settlement contract to spend the settlement token before sending this transaction."
+      : "The approval transaction is included. Send it before the settlement transaction unless sufficient allowance already exists."
   };
 }
 
