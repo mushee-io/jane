@@ -1,9 +1,9 @@
 {
   "name": "33jane",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Private multi-model AI router, price optimizer and local privacy firewall",
+  "description": "33jane private intelligence router, multimodal creator platform, agent economy and open compute network",
   "scripts": {
     "dev": "tsx watch src/api/server.ts",
     "start": "tsx src/api/server.ts",
@@ -15,7 +15,9 @@
     "compile:contracts": "node scripts/compile-contracts.mjs",
     "deploy:monad-settlement": "node scripts/deploy-settlement.mjs",
     "deploy:contract": "node scripts/deploy-contract.mjs",
-    "check:ui": "node scripts/check-inline-js.mjs"
+    "check:ui": "node scripts/check-inline-js.mjs",
+    "mcp": "node mcp/jane-server.mjs",
+    "jane": "node bin/jane.mjs"
   },
   "dependencies": {
     "zod": "^3.25.76",
@@ -26,5 +28,8 @@
     "tsx": "^4.20.0",
     "typescript": "^5.8.0",
     "solc": "^0.8.30"
+  },
+  "bin": {
+    "jane": "bin/jane.mjs"
   }
 }
