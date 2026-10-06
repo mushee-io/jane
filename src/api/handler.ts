@@ -31,6 +31,7 @@ import { JaneArenaService, type ArenaRequest } from "../arena/service.js";
 import { ConfidentialComputeService, type AttestationDocument } from "../confidential/attestation.js";
 import { ConfidentialGateway, type EncryptedInferenceEnvelope } from "../confidential/gateway.js";
 import { TeamService, type JaneTeam, type TeamMember } from "../teams/service.js";
+import { JaneVoiceService, type VoiceSessionRequest } from "../voice/service.js";
 import type { Hex } from "viem";
 
 function json(payload: unknown, status = 200, extra: Record<string,string> = {}): Response {
@@ -119,6 +120,7 @@ export function createApiHandler() {
   const confidential = new ConfidentialComputeService();
   const confidentialGateway = new ConfidentialGateway();
   const teams = new TeamService();
+  const voice = new JaneVoiceService();
 
   return async function handle(request: Request): Promise<Response> {
     if (request.method === "OPTIONS") return new Response(null, { status: 204 });
@@ -416,6 +418,15 @@ export function createApiHandler() {
 
       if (request.method === "GET" && path === "/api/research/status") {
         return json(research.status());
+      }
+
+      if (request.method === "GET" && path === "/api/voice/status") {
+        return json(voice.status());
+      }
+
+      if (request.method === "POST" && path === "/api/voice/session") {
+        const body = await parseBody(request) as VoiceSessionRequest;
+        return json(await voice.createSession(body));
       }
 
       if (request.method === "POST" && path === "/api/research") {
