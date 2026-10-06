@@ -10,7 +10,15 @@
     "noUncheckedIndexedAccess": true,
     "outDir": "dist",
     "rootDir": ".",
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["src/**/*.ts", "api/**/*.ts", "scripts/**/*.ts", "test/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "api/**/*.ts",
+    "scripts/**/*.ts",
+    "test/**/*.ts",
+    "packages/sdk-js/**/*.ts"
+  ]
 }
