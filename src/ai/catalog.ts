@@ -5,6 +5,24 @@ function num(name: string, fallback: number): number {
   return Number.isFinite(value) ? value : fallback;
 }
 
+function extraModels(): ModelProfile[] {
+  const raw = process.env.JANE_LLM_MODELS_JSON;
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as ModelProfile[];
+    return Array.isArray(parsed)
+      ? parsed.filter((model) =>
+          Boolean(model?.id && model?.model && model?.provider && Array.isArray(model?.capabilities))
+        ).map((model) => ({
+          ...model,
+          configured: model.configured !== false
+        }))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 export function modelCatalog(): ModelProfile[] {
   const openaiConfigured = Boolean(process.env.OPENAI_API_KEY);
   const groqConfigured = Boolean(process.env.GROQ_API_KEY);
@@ -12,7 +30,7 @@ export function modelCatalog(): ModelProfile[] {
   const privateConfigured = Boolean(process.env.JANE_PRIVATE_BASE_URL && process.env.JANE_PRIVATE_MODEL);
   const janeComputeConfigured = Boolean(process.env.JANE_COMPUTE_BASE_URL && process.env.JANE_COMPUTE_MODEL);
 
-  return [
+  const builtins: ModelProfile[] = [
     {
       id: "openai-reason",
       provider: "openai",
@@ -89,4 +107,11 @@ export function modelCatalog(): ModelProfile[] {
       configured: privateConfigured
     }
   ];
+
+  const seen = new Set<string>();
+  return [...builtins, ...extraModels()].filter((model) => {
+    if (seen.has(model.id)) return false;
+    seen.add(model.id);
+    return true;
+  });
 }
