@@ -1,4 +1,4 @@
-export type JaneMode = "auto" | "fast" | "reason" | "code" | "vision" | "private";
+export type JaneMode = "auto" | "fast" | "reason" | "code" | "vision" | "private" | "confidential";
 export type TaskKind = "general" | "fast" | "reasoning" | "code" | "vision";
 export type FeedbackSignal = "success" | "failure" | "retry" | "thumbs_up" | "thumbs_down";
 
@@ -13,11 +13,19 @@ export interface ClientPrivacySummary {
   categories: string[];
 }
 
+export interface ClientContextSummary {
+  originalChars: number;
+  sentChars: number;
+  selectedChunks: number;
+  sources: string[];
+}
+
 export interface JaneRequest {
   messages: ChatMessage[];
   mode: JaneMode;
   maxCostUsd?: number;
   clientPrivacy?: ClientPrivacySummary;
+  clientContext?: ClientContextSummary;
 }
 
 export interface ModelProfile {
