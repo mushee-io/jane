@@ -18,7 +18,8 @@ function stablePolicy(policy: SpendingPolicy): string {
     allowedProviders: policy.allowedProviders ?? [],
     requireZeroRetention: policy.requireZeroRetention ?? false,
     minPrivacyScore: policy.minPrivacyScore ?? null,
-    maxLatencyScorePenalty: policy.maxLatencyScorePenalty ?? null
+    maxLatencyScorePenalty: policy.maxLatencyScorePenalty ?? null,
+    allowedRegions: policy.allowedRegions ?? []
   });
 }
 
@@ -67,6 +68,11 @@ export class SpendingPolicyEngine {
       }
       if (policy.maxLatencyScorePenalty !== undefined && (1 - candidate.model.latencyScore) > policy.maxLatencyScorePenalty) {
         reasons.push("provider latency score violates policy");
+      }
+      if (policy.allowedRegions?.length) {
+        if (!candidate.model.region || !policy.allowedRegions.includes(candidate.model.region)) {
+          reasons.push("provider region violates data-residency policy");
+        }
       }
     }
 
