@@ -1,16 +1,5 @@
 import { createHash } from "node:crypto";
-import type { JaneMode, ModelProfile, RouteCandidate } from "../ai/types.js";
-
-export interface SpendingPolicy {
-  principal: string;
-  maxCostUsdPerRequest?: number;
-  dailyBudgetUsd?: number;
-  allowedModes?: JaneMode[];
-  allowedProviders?: ModelProfile["provider"][];
-  requireZeroRetention?: boolean;
-  minPrivacyScore?: number;
-  maxLatencyScorePenalty?: number;
-}
+import type { JaneMode, RouteCandidate, SpendingPolicy } from "../ai/types.js";
 
 export interface PolicyDecision {
   allowed: boolean;
