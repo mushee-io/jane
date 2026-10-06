@@ -8,7 +8,8 @@ for (const [from,to] of [
   ["manifest.webmanifest","public/manifest.webmanifest"],
   ["sw.js","public/sw.js"],
   ["assets/icon.svg","public/assets/icon.svg"],
-  ["assets/e2ee.js","public/assets/e2ee.js"]
+  ["assets/e2ee.js","public/assets/e2ee.js"],
+  ["assets/voice.js","public/assets/voice.js"]
 ]) {
   await copyFile(from,to);
 }
