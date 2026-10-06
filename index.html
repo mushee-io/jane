@@ -1259,7 +1259,7 @@
       var scan=el("privacyToggle").checked?redact(query):{text:query,map:{},count:0,categories:[]};
       var response=await fetch("/api/research",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
         mode:state.mode,messages:[{role:"user",content:scan.text}],query:scan.text,
-        urls:(query.match(/https?:\\/\\/[^\\s)\\]}>"']+/gi)||[]).slice(0,5),
+        urls:(query.match(/https?:\/\/[^\s)\]}>"']+/gi)||[]).slice(0,5),
         includeX:el("researchIncludeX").checked,
         clientPrivacy:{applied:el("privacyToggle").checked,redactedCount:scan.count,categories:scan.categories}
       })});
