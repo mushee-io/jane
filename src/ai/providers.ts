@@ -47,16 +47,29 @@ export async function completeChat(model: ModelProfile, messages: ChatMessage[])
   };
   if (config.apiKey) headers.authorization = `Bearer ${config.apiKey}`;
 
-  const response = await fetch(`${config.baseUrl.replace(/\/$/, "")}/chat/completions`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      model: model.model,
-      messages,
-      temperature: 0.35,
-      stream: false
-    })
-  });
+  const timeoutMs = Number(process.env.JANE_PROVIDER_TIMEOUT_MS ?? 30_000);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error("PROVIDER_TIMEOUT")), timeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetch(`${config.baseUrl.replace(/\/$/, "")}/chat/completions`, {
+      method: "POST",
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: model.model,
+        messages,
+        temperature: 0.35,
+        stream: false
+      })
+    });
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error(`PROVIDER_TIMEOUT:${timeoutMs}`);
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 
   const latencyMs = Date.now() - started;
   const payload = await response.json().catch(() => ({})) as {
