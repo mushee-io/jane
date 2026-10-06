@@ -2,8 +2,18 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "outputDirectory": "public",
   "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/api/:path*", "destination": "/api/index?path=:path*" }
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/v1/:path*",
+      "destination": "/api/index?v1=:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index?path=:path*"
+    }
   ],
   "functions": {
     "api/index.ts": {
