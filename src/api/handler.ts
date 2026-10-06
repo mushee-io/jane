@@ -1,6 +1,15 @@
 import { JaneAIService } from "../ai/service.js";
 import { feedbackSchema, janeRequestSchema, policyEvaluateSchema } from "../ai/schemas.js";
-import { openAIChatSchema, openAIModels, openAIStream, toJaneRequest, toOpenAIResponse } from "../openai/compat.js";
+import {
+  openAIChatSchema,
+  openAIModels,
+  openAIResponsesSchema,
+  openAIStream,
+  responseToJaneRequest,
+  toJaneRequest,
+  toOpenAIResponse,
+  toOpenAIResponsesResult
+} from "../openai/compat.js";
 import { prepareSettlement, settlementStatus, verifySettlement } from "../monad/settlement.js";
 import { verifyPrivacyReceipt, type PrivacyReceipt } from "../privacy/receipt.js";
 import type { Hex } from "viem";
@@ -76,6 +85,24 @@ export function createApiHandler() {
 
       if (request.method === "GET" && path === "/v1/models") {
         return json({ object: "list", data: openAIModels() });
+      }
+
+      if (request.method === "POST" && path === "/v1/responses") {
+        let input;
+        try {
+          input = openAIResponsesSchema.parse(await parseBody(request));
+        } catch {
+          return openAIError("Invalid OpenAI-compatible Responses request.", 400, "invalid_request");
+        }
+
+        try {
+          const result = await jane.chat(responseToJaneRequest(input));
+          return json(toOpenAIResponsesResult(result, input.model));
+        } catch (error) {
+          const value = error as Error;
+          const status = value.message === "NO_LIVE_AI_PROVIDER_CONFIGURED" ? 503 : 502;
+          return openAIError(value.message, status, "upstream_error");
+        }
       }
 
       if (request.method === "POST" && path === "/v1/chat/completions") {
