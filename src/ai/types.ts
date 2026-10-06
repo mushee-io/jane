@@ -20,12 +20,24 @@ export interface ClientContextSummary {
   sources: string[];
 }
 
+export interface SpendingPolicy {
+  principal: string;
+  maxCostUsdPerRequest?: number;
+  dailyBudgetUsd?: number;
+  allowedModes?: JaneMode[];
+  allowedProviders?: ModelProfile["provider"][];
+  requireZeroRetention?: boolean;
+  minPrivacyScore?: number;
+  maxLatencyScorePenalty?: number;
+}
+
 export interface JaneRequest {
   messages: ChatMessage[];
   mode: JaneMode;
   maxCostUsd?: number;
   clientPrivacy?: ClientPrivacySummary;
   clientContext?: ClientContextSummary;
+  spendingPolicy?: SpendingPolicy;
 }
 
 export interface ModelProfile {
