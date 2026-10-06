@@ -92,7 +92,9 @@ export function prepareSettlement(receipt: PrivacyReceipt) {
   const status = settlementStatus();
   if (!status.configured) throw new Error("MONAD_SETTLEMENT_NOT_CONFIGURED");
 
-  const amount = parseUnits(receipt.route.actualCostUsd.toFixed(config.decimals), config.decimals);
+  const minimumUnit = 1 / (10 ** config.decimals);
+  const billableUsd = Math.max(receipt.route.actualCostUsd, minimumUnit);
+  const amount = parseUnits(billableUsd.toFixed(config.decimals), config.decimals);
   const data = encodeFunctionData({
     abi: janeSettlementAbi,
     functionName: "settleInference",
@@ -115,7 +117,8 @@ export function prepareSettlement(receipt: PrivacyReceipt) {
     tokenSymbol: config.symbol,
     tokenDecimals: config.decimals,
     amountAtomic: amount.toString(),
-    amountUsd: receipt.route.actualCostUsd,
+    amountUsd: billableUsd,
+    measuredCostUsd: receipt.route.actualCostUsd,
     provider: config.provider,
     receiptHash: `0x${receipt.receiptHash}`,
     requestHash: `0x${receipt.requestHash}`,
