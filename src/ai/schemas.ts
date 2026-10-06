@@ -32,6 +32,20 @@ export const janeRequestSchema = z.object({
     selectedChunks: z.number().int().min(0).max(10_000),
     sources: z.array(z.string().max(100)).max(100)
   }).optional(),
+  attachments: z.array(z.object({
+    type: z.enum(["image_url", "image_base64"]),
+    url: z.string().url().max(5_000_000).optional(),
+    data: z.string().max(15_000_000).optional(),
+    mediaType: z.string().max(128).optional(),
+    detail: z.enum(["auto", "low", "high"]).optional()
+  }).refine((value) => value.type === "image_url" ? Boolean(value.url) : Boolean(value.data), {
+    message: "image_url requires url and image_base64 requires data"
+  })).max(8).optional(),
+  generation: z.object({
+    temperature: z.number().min(0).max(2).optional(),
+    topP: z.number().min(0).max(1).optional(),
+    maxOutputTokens: z.number().int().positive().max(100_000).optional()
+  }).optional(),
   spendingPolicy: spendingPolicySchema.optional(),
   enterprise: z.object({
     orgId: z.string().min(1).max(128),
