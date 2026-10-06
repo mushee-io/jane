@@ -2,10 +2,13 @@ import { modelCatalog } from "./catalog.js";
 import { decideRoute } from "./price-optimizer.js";
 import { completeChat } from "./providers.js";
 import { JaneTelemetry } from "./telemetry.js";
+import { FailoverController, classifyProviderFailure, isRetryableFailure, type FailureRecord } from "./failover.js";
+import { SpendingPolicyEngine } from "../economics/spending-policy.js";
 import { checkPrivacyPolicy } from "../privacy/policy.js";
 import { createPrivacyReceipt } from "../privacy/receipt.js";
 import { planSplitInference } from "../privacy/split-planner.js";
-import type { FeedbackSignal, JaneRequest, ModelProfile, RouteDecision } from "./types.js";
+import { prepareSettlement, settlementStatus } from "../monad/settlement.js";
+import type { FeedbackSignal, JaneMode, JaneRequest, ModelProfile, RouteDecision, SpendingPolicy } from "./types.js";
 
 function publicModel(model: ModelProfile) {
   return {
@@ -27,6 +30,8 @@ function publicModel(model: ModelProfile) {
 
 export class JaneAIService {
   readonly telemetry = new JaneTelemetry();
+  readonly failover = new FailoverController();
+  readonly spending = new SpendingPolicyEngine();
   private readonly requestModels = new Map<string, string>();
 
   models() {
@@ -48,10 +53,17 @@ export class JaneAIService {
         encryptedVaultFoundation: true,
         confidentialRouter: true,
         splitInferencePlanner: true,
-        privacyReceipts: true
+        privacyReceipts: true,
+        openAICompatibleApi: true,
+        advancedFailover: true,
+        programmableSpendingPolicies: true,
+        monadSettlement: true,
+        onchainExecutionReceipts: true
       },
       configuredProviders: models.filter((model) => model.configured).map((model) => model.provider),
-      availableRoutes: models.map((model) => ({ id: model.id, configured: model.configured }))
+      availableRoutes: models.map((model) => ({ id: model.id, configured: model.configured })),
+      circuits: this.failover.snapshot(models),
+      monad: settlementStatus()
     };
   }
 
@@ -61,6 +73,14 @@ export class JaneAIService {
 
   plan(request: JaneRequest) {
     return planSplitInference(request);
+  }
+
+  evaluatePolicy(policy: SpendingPolicy, mode: JaneMode = "auto") {
+    return this.spending.evaluate(policy, mode);
+  }
+
+  policyUsage(principal: string) {
+    return this.spending.snapshot(principal);
   }
 
   async chat(request: JaneRequest) {
@@ -78,12 +98,47 @@ export class JaneAIService {
       throw error;
     }
 
-    const failures: Array<{ modelId: string; error: string }> = [];
+    const failures: FailureRecord[] = [];
     for (const candidate of candidates) {
       const model = candidate.model;
-      const policy = checkPrivacyPolicy(request, model);
-      if (!policy.allowed) {
-        failures.push({ modelId: model.id, error: `PRIVACY_POLICY_BLOCKED:${policy.reasons.join("|")}` });
+
+      if (!this.failover.isAvailable(model.id)) {
+        failures.push({
+          modelId: model.id,
+          provider: model.provider,
+          classification: "provider_unavailable",
+          message: "CIRCUIT_OPEN",
+          retryable: true,
+          latencyMs: 0
+        });
+        continue;
+      }
+
+      const privacyPolicy = checkPrivacyPolicy(request, model);
+      if (!privacyPolicy.allowed) {
+        failures.push({
+          modelId: model.id,
+          provider: model.provider,
+          classification: "privacy",
+          message: `PRIVACY_POLICY_BLOCKED:${privacyPolicy.reasons.join("|")}`,
+          retryable: false,
+          latencyMs: 0
+        });
+        continue;
+      }
+
+      const spendDecision = request.spendingPolicy
+        ? this.spending.evaluate(request.spendingPolicy, request.mode, candidate)
+        : null;
+      if (spendDecision && !spendDecision.allowed) {
+        failures.push({
+          modelId: model.id,
+          provider: model.provider,
+          classification: "bad_request",
+          message: `SPENDING_POLICY_BLOCKED:${spendDecision.reasons.join("|")}`,
+          retryable: false,
+          latencyMs: 0
+        });
         continue;
       }
 
@@ -97,7 +152,12 @@ export class JaneAIService {
           + (actualOutput / 1_000_000) * model.outputCostPerMillion;
 
         this.telemetry.recordExecution(model.id, true, completion.latencyMs, cost);
+        this.failover.recordSuccess(model.id);
         this.remember(liveDecision.requestId, model.id);
+
+        const committedPolicy = request.spendingPolicy
+          ? this.spending.commit(request.spendingPolicy, cost)
+          : null;
 
         const receipt = createPrivacyReceipt({
           request,
@@ -108,6 +168,15 @@ export class JaneAIService {
           estimatedSavingsPercent: previewDecision.estimatedSavingsPercent,
           failoverAttempts: failures.length
         });
+
+        let settlement = null;
+        if (settlementStatus().configured) {
+          try {
+            settlement = prepareSettlement(receipt);
+          } catch {
+            settlement = null;
+          }
+        }
 
         return {
           id: liveDecision.requestId,
@@ -144,13 +213,27 @@ export class JaneAIService {
           },
           latencyMs: completion.latencyMs,
           failoverAttempts: failures,
+          spendingPolicy: committedPolicy,
           privacyReceipt: receipt,
-          splitPlan: planSplitInference(request)
+          splitPlan: planSplitInference(request),
+          settlement
         };
       } catch (error) {
         const message = error instanceof Error ? error.message : "PROVIDER_FAILURE";
-        failures.push({ modelId: model.id, error: message });
-        this.telemetry.recordExecution(model.id, false, Date.now() - started, candidate.estimatedCostUsd);
+        const classification = classifyProviderFailure(error);
+        const latencyMs = Date.now() - started;
+        failures.push({
+          modelId: model.id,
+          provider: model.provider,
+          classification,
+          message,
+          retryable: isRetryableFailure(classification),
+          latencyMs
+        });
+        if (classification !== "privacy" && classification !== "bad_request") {
+          this.failover.recordFailure(model.id, classification);
+        }
+        this.telemetry.recordExecution(model.id, false, latencyMs, candidate.estimatedCostUsd);
       }
     }
 
