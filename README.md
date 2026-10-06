@@ -6,7 +6,7 @@
 
 > **The internet should not have to choose an AI. 33jane chooses intelligence for it.**
 
-## Milestones 1–22
+## Milestones 1–35
 
 ### 1. Core 33jane Chat
 The repository now ships a responsive AI chat product with:
@@ -274,6 +274,23 @@ GET  /api/enterprise/audit
 
 GET  /api/token/status
 GET  /api/token/utility
+
+GET  /api/catalog
+GET  /api/media/models
+POST /api/media/generate
+GET  /api/voice/status
+POST /api/voice/session
+GET  /api/research/status
+POST /api/research
+GET  /api/characters
+POST /api/characters/:id/chat
+POST /api/arena
+GET  /api/confidential/status
+GET  /api/confidential/attestation
+GET  /api/confidential/envelope
+POST /api/confidential/infer
+GET  /api/benchmarks
+GET  /api/benchmarks/leaderboard
 ```
 
 The web client can send the approval + settlement transaction through an injected EVM wallet once Monad configuration is present.
@@ -480,6 +497,120 @@ POST /api/network/registry/prepare
 ```
 
 The public network console in the 33jane UI shows active nodes, capacity, regions, privacy-capable nodes, agent infrastructure, enterprise status, Monad status and optional 33G status.
+
+
+
+### 23. Massive Model Catalog
+The text router can ingest an arbitrary JSON model catalog through `JANE_LLM_MODELS_JSON`, while `JANE_MODEL_CATALOG_JSON` publishes a cross-modality inventory for text, image, video, audio, speech, embeddings and search.
+
+```text
+GET /api/catalog
+```
+
+This is intentionally data-driven: adding 100+ routes should be a configuration problem, not a code rewrite.
+
+### 24. Jane Image Studio
+Creator routing supports text-to-image, image editing, inpainting, upscaling and background removal through configurable providers.
+
+### 25. Jane Video Studio
+Video routing supports text-to-video, image-to-video, extend and upscale operations.
+
+### 26. Jane Audio + Music
+Audio routing supports music generation, sound effects and transcription.
+
+### 27. Jane Voice
+The speech layer supports TTS, STT and speech-to-speech media routes, plus a provider-agnostic realtime session broker.
+
+```text
+GET  /api/voice/status
+POST /api/voice/session
+```
+
+### 28. Jane Deep Research
+Public search is isolated from confidential context. The search provider receives a sanitized research query; Jane can then synthesize the returned public sources through the normal AI router.
+
+```text
+GET  /api/research/status
+POST /api/research
+```
+
+### 29. Characters + Agents
+Characters have server-side system prompts, default modes, tool declarations and optional memory flags. Users can select a character without exposing its hidden system prompt in the public character list.
+
+```text
+GET  /api/characters
+POST /api/characters/:id/chat
+```
+
+Agent accounts/wallets from M16 remain the economic identity underneath autonomous characters.
+
+### 30. Jane Arena
+Arena executes the same prompt across multiple configured models and returns cost, latency, output, quality metadata and a recommended result.
+
+```text
+POST /api/arena
+```
+
+### 31. TEE + E2EE Confidential Compute Interface
+The confidential stack now contains:
+- an attestation document fetcher
+- expected enclave-measurement verification
+- attestation fingerprinting
+- an RSA-OAEP + AES-256-GCM browser encryption helper
+- a ciphertext-only confidential gateway
+- a policy that refuses to hand out the enclave encryption key until attestation passes
+
+```text
+GET  /api/confidential/status
+GET  /api/confidential/attestation
+POST /api/confidential/verify
+GET  /api/confidential/envelope
+GET  /api/confidential/gateway/status
+POST /api/confidential/infer
+```
+
+The repository provides the end-to-end interface; production hardware guarantees still depend on connecting a genuine TEE provider/verifier and enclave endpoint.
+
+### 32. Developer Platform
+Jane now includes:
+- OpenAI-compatible API
+- JavaScript SDK
+- Python SDK
+- CLI
+- MCP stdio server
+- OpenAI-compatible proxy behavior
+- organization/agent request headers
+
+```bash
+npm run jane -- chat "hello"
+npm run mcp
+```
+
+### 33. Installable Desktop/Mobile App
+The main web client is now a PWA with:
+- web manifest
+- service worker shell caching
+- standalone install mode
+- install prompt
+- shared responsive desktop/mobile UI
+
+### 34. Teams + Administration
+Teams support owners/admins/developers/members/viewers, member budgets, departments and organization links. Enterprise policy continues to control provider, privacy, budget and data-residency constraints.
+
+### 35. Benchmarks + Savings Intelligence
+Every successful and failed routed inference can feed the benchmark layer. The leaderboard tracks:
+- success rate
+- average latency
+- average cost
+- average quality
+- cost per successful task
+
+```text
+GET /api/benchmarks
+GET /api/benchmarks/leaderboard
+```
+
+The goal is not merely the cheapest token. Jane optimizes toward the lowest **cost per successful task**.
 
 
 ## API
