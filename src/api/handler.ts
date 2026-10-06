@@ -525,18 +525,18 @@ export function createApiHandler() {
 
       if (request.method === "GET" && path === "/api/confidential/attestation") {
         const document = await confidential.fetchAttestation();
-        return json({ document, verification: confidential.verify(document) });
+        return json({ document, verification: await confidential.verifyTrusted(document) });
       }
 
       if (request.method === "POST" && path === "/api/confidential/verify") {
         const body = await parseBody(request) as { document?: AttestationDocument };
         if (!body.document) return json({ error: "ATTESTATION_DOCUMENT_REQUIRED" }, 400);
-        return json(confidential.verify(body.document));
+        return json(await confidential.verifyTrusted(body.document));
       }
 
       if (request.method === "GET" && path === "/api/confidential/envelope") {
         const attestation = await confidential.fetchAttestation();
-        const verification = confidential.verify(attestation);
+        const verification = await confidential.verifyTrusted(attestation);
         if (!verification.valid) return json({ error: "ENCLAVE_ATTESTATION_NOT_VERIFIED", verification }, 503);
         return json({
           ...confidential.clientEnvelope(),
