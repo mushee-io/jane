@@ -1,0 +1,5 @@
+import { mkdir, copyFile } from "node:fs/promises";
+
+await mkdir("public", { recursive: true });
+await copyFile("index.html", "public/index.html");
+console.log("Copied 33jane web app to public/");
