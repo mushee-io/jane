@@ -5,7 +5,7 @@ import { JaneTelemetry } from "../src/ai/telemetry.js";
 import type { JaneRequest, ModelProfile } from "../src/ai/types.js";
 import { checkPrivacyPolicy } from "../src/privacy/policy.js";
 import { planSplitInference } from "../src/privacy/split-planner.js";
-import { createPrivacyReceipt } from "../src/privacy/receipt.js";
+import { createPrivacyReceipt, verifyPrivacyReceipt } from "../src/privacy/receipt.js";
 
 function model(overrides: Partial<ModelProfile>): ModelProfile {
   return {
@@ -77,4 +77,8 @@ test("privacy receipt contains hashes and context exposure without raw prompt", 
   assert.equal(receipt.zeroRetention, true);
   assert.equal(receipt.receiptHash.length, 64);
   assert.equal(JSON.stringify(receipt).includes("Sensitive prompt"), false);
+  assert.equal(verifyPrivacyReceipt(receipt), true);
+
+  const tampered = { ...receipt, privacyScore: 0.1 };
+  assert.equal(verifyPrivacyReceipt(tampered), false);
 });
