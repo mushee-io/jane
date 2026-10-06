@@ -38,7 +38,11 @@ export class JaneVoiceService{
       id:`voice_${randomUUID().replace(/-/g,"")}`,
       transport:process.env.JANE_REALTIME_VOICE_TRANSPORT??"webrtc",
       provider:process.env.JANE_REALTIME_VOICE_PROVIDER??"configured",
-      session:body
+      session:{
+        ...body,
+        webrtcUrl:body.webrtcUrl ?? body.webrtc_url ?? null,
+        ephemeralToken:body.ephemeralToken ?? body.ephemeral_token ?? body.client_secret ?? null
+      }
     };
   }
 }
