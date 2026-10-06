@@ -1,6 +1,6 @@
 {
   "name": "33jane",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Private multi-model AI router, price optimizer and local privacy firewall",
@@ -13,7 +13,8 @@
     "build": "tsc -p tsconfig.build.json && node scripts/copy-static.mjs",
     "check": "npm run lint && npm run typecheck && npm test && npm run compile:contracts && npm run build",
     "compile:contracts": "node scripts/compile-contracts.mjs",
-    "deploy:monad-settlement": "node scripts/deploy-settlement.mjs"
+    "deploy:monad-settlement": "node scripts/deploy-settlement.mjs",
+    "deploy:contract": "node scripts/deploy-contract.mjs"
   },
   "dependencies": {
     "zod": "^3.25.76",
