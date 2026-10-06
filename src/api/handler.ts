@@ -23,6 +23,13 @@ import { getTokenUtility, tokenUtilityStatus } from "../token/utility.js";
 import { agentWalletStatus, prepareAgentWalletCreation } from "../agents/onchain-wallet.js";
 import { computeRegistryStatus, prepareComputeRegistration } from "../network/onchain-registry.js";
 import type { JaneRequest } from "../ai/types.js";
+import { unifiedCatalog, catalogSummary } from "../catalog/unified.js";
+import { JaneMediaService, type MediaRequest } from "../media/service.js";
+import { JaneResearchService } from "../research/service.js";
+import { JaneCharacterRegistry, type JaneCharacter } from "../characters/service.js";
+import { JaneArenaService, type ArenaRequest } from "../arena/service.js";
+import { ConfidentialComputeService, type AttestationDocument } from "../confidential/attestation.js";
+import { TeamService, type JaneTeam, type TeamMember } from "../teams/service.js";
 import type { Hex } from "viem";
 
 function json(payload: unknown, status = 200, extra: Record<string,string> = {}): Response {
@@ -104,6 +111,12 @@ function requireJaneApiKey(request: Request): Response | null {
 
 export function createApiHandler() {
   const jane = new JaneAIService();
+  const media = new JaneMediaService();
+  const research = new JaneResearchService();
+  const characters = new JaneCharacterRegistry();
+  const arena = new JaneArenaService();
+  const confidential = new ConfidentialComputeService();
+  const teams = new TeamService();
 
   return async function handle(request: Request): Promise<Response> {
     if (request.method === "OPTIONS") return new Response(null, { status: 204 });
@@ -383,6 +396,98 @@ export function createApiHandler() {
         const address = url.searchParams.get("address");
         if (!address) return json({ error: "ADDRESS_REQUIRED" }, 400);
         return json(await getTokenUtility(address));
+      }
+
+      if (request.method === "GET" && path === "/api/catalog") {
+        return json({ summary: catalogSummary(), models: unifiedCatalog() });
+      }
+
+      if (request.method === "GET" && path === "/api/media/models") {
+        return json({ models: media.list() });
+      }
+
+      if (request.method === "POST" && path === "/api/media/generate") {
+        const body = await parseBody(request) as MediaRequest;
+        if (!body?.modality || !body?.operation) return json({ error: "MODALITY_AND_OPERATION_REQUIRED" }, 400);
+        return json(await media.generate(body));
+      }
+
+      if (request.method === "GET" && path === "/api/research/status") {
+        return json(research.status());
+      }
+
+      if (request.method === "POST" && path === "/api/research") {
+        const body = await parseBody(request) as JaneRequest & { query?: string };
+        const input = requestContext(request, janeRequestSchema.parse(body));
+        return json(await research.research({ ...input, query: body.query }));
+      }
+
+      if (request.method === "GET" && path === "/api/characters") {
+        return json({ characters: characters.list() });
+      }
+
+      if (request.method === "POST" && path === "/api/characters") {
+        const adminError = requireAdmin(request);
+        if (adminError) return adminError;
+        const body = await parseBody(request) as Omit<JaneCharacter, "id"|"createdAt"> & { id?: string };
+        if (!body?.name || !body?.systemPrompt) return json({ error: "NAME_AND_SYSTEM_PROMPT_REQUIRED" }, 400);
+        return json({ character: characters.upsert(body) }, 201);
+      }
+
+      if (request.method === "POST" && path === "/api/arena") {
+        const body = await parseBody(request) as ArenaRequest;
+        if (!Array.isArray(body.messages) || body.messages.length === 0) return json({ error: "MESSAGES_REQUIRED" }, 400);
+        return json(await arena.run(body));
+      }
+
+      if (request.method === "GET" && path === "/api/confidential/status") {
+        return json(confidential.status());
+      }
+
+      if (request.method === "GET" && path === "/api/confidential/attestation") {
+        const document = await confidential.fetchAttestation();
+        return json({ document, verification: confidential.verify(document) });
+      }
+
+      if (request.method === "POST" && path === "/api/confidential/verify") {
+        const body = await parseBody(request) as { document?: AttestationDocument };
+        if (!body.document) return json({ error: "ATTESTATION_DOCUMENT_REQUIRED" }, 400);
+        return json(confidential.verify(body.document));
+      }
+
+      if (request.method === "GET" && path === "/api/confidential/envelope") {
+        return json(confidential.clientEnvelope());
+      }
+
+      if (request.method === "GET" && path === "/api/teams") {
+        const adminError = requireAdmin(request);
+        if (adminError) return adminError;
+        return json({ teams: teams.list() });
+      }
+
+      if (request.method === "POST" && path === "/api/teams") {
+        const adminError = requireAdmin(request);
+        if (adminError) return adminError;
+        const body = await parseBody(request) as Omit<JaneTeam, "id"|"createdAt"> & { id?: string };
+        if (!body?.name || !Array.isArray(body.members)) return json({ error: "TEAM_NAME_AND_MEMBERS_REQUIRED" }, 400);
+        return json({ team: teams.upsert(body) }, 201);
+      }
+
+      if (request.method === "POST" && /^\/api\/teams\/[^/]+\/members$/.test(path)) {
+        const adminError = requireAdmin(request);
+        if (adminError) return adminError;
+        const teamId = path.split("/")[3] ?? "";
+        const body = await parseBody(request) as TeamMember;
+        if (!body?.userId || !body?.role) return json({ error: "USER_AND_ROLE_REQUIRED" }, 400);
+        return json({ team: teams.addMember(teamId, body) });
+      }
+
+      if (request.method === "GET" && path === "/api/benchmarks") {
+        return json({ runs: jane.benchmarks.list(Number(url.searchParams.get("limit") ?? 200)) });
+      }
+
+      if (request.method === "GET" && path === "/api/benchmarks/leaderboard") {
+        return json({ leaderboard: jane.benchmarks.leaderboard() });
       }
 
       if (request.method === "POST" && path === "/api/privacy/verify") {
