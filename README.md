@@ -160,7 +160,7 @@ Receipts contain:
 - failover count
 - receipt hash
 
-This makes 33jane's privacy behavior inspectable instead of relying only on a marketing promise.
+This makes 33jane's privacy behavior inspectable instead of relying only on a marketing promise. Receipts are tamper-detectable and can be checked through `POST /api/privacy/verify`.
 
 
 ## API
@@ -173,6 +173,7 @@ POST /api/ai/route
 POST /api/ai/plan
 POST /api/ai/chat
 POST /api/ai/feedback
+POST /api/privacy/verify
 ```
 
 ### Route preview
