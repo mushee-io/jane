@@ -40,4 +40,4 @@ const receipt = await publicClient.waitForTransactionReceipt({ hash });
 if (!receipt.contractAddress) throw new Error("Deployment mined without a contract address.");
 
 console.log(`JaneInferenceSettlement deployed: ${receipt.contractAddress}`);
-console.log("Set MONAD_SETTLEMENT_CONTRACT to this address in the 33jane deployment environment.");
+console.log("Set MONAD_SETTLEMENT_CONTRACT to this address in the Jane deployment environment.");
