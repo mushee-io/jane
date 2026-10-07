@@ -12,7 +12,7 @@ export class JaneClient{
   private readonly apiKey?:string;
   private readonly headers:Record<string,string>;
   constructor(options:JaneClientOptions={}){
-    this.baseUrl=(options.baseUrl??"https://api.33jane.ai").replace(/\/$/,"");
+    this.baseUrl=(options.baseUrl??"https://jane-seven-sooty.vercel.app").replace(/\/$/,"");
     this.apiKey=options.apiKey;
     this.headers={
       ...(options.orgId?{"x-jane-org":options.orgId}:{}),
