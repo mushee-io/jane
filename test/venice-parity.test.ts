@@ -26,7 +26,7 @@ test("vision attachments and sampling controls validate", () => {
 
 test("OpenAI-compatible vision request becomes Jane attachment", () => {
   const request = toJaneRequest({
-    model: "33jane-vision",
+    model: "jane-vision",
     stream: false,
     messages: [{
       role: "user",
