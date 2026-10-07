@@ -1,4 +1,4 @@
-const CACHE="33jane-shell-v2";
+const CACHE="jane-shell-v3";
 const SHELL=["/","/index.html","/manifest.webmanifest","/assets/icon.svg","/assets/e2ee.js","/assets/voice.js"];
 self.addEventListener("install",(event)=>event.waitUntil(caches.open(CACHE).then((cache)=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",(event)=>event.waitUntil(caches.keys().then((keys)=>Promise.all(keys.filter((key)=>key!==CACHE).map((key)=>caches.delete(key)))).then(()=>self.clients.claim())));
