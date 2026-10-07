@@ -7,8 +7,8 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <script src="/assets/e2ee.js" defer></script>
   <script src="/assets/voice.js" defer></script>
-  <title>33jane — Ask anything</title>
-  <meta name="description" content="33jane routes every request to the best AI for the job while minimizing cost and data exposure." />
+  <title>Jane — Ask anything</title>
+  <meta name="description" content="Jane routes every request to the best AI for the job while minimizing cost and data exposure." />
   <style>
     :root{
       --bg:#08090b;--panel:#0f1115;--panel2:#151821;--line:#242833;--text:#f7f8fb;
@@ -174,11 +174,11 @@
   </style>
 </head>
 <body>
-<nav class="jane-shell-nav" aria-label="33jane">
+<nav class="jane-shell-nav" aria-label="Jane">
   <div class="jane-shell-left">
-    <a class="jane-shell-brand" href="/"><i></i><span>33jane</span></a>
+    <a class="jane-shell-brand" href="/"><i></i><span>Jane</span></a>
     <a class="jane-nav-link secondary" href="/">Home</a>
-    <a class="jane-nav-link secondary" href="/#clearing">3maryjane Clearing</a>
+    <a class="jane-nav-link secondary" href="/clearing">3maryjane Clearing House</a>
   </div>
   <div class="jane-shell-right">
     <button class="jane-nav-btn" id="routeDetails">Route details</button>
@@ -198,9 +198,9 @@
 </nav>
 <div class="app">
   <aside class="sidebar">
-    <div class="brand"><div class="brandmark"><span class="dot"></span>33jane</div><span class="beta">ALPHA</span></div>
+    <div class="brand"><div class="brandmark"><span class="dot"></span>Jane</div><span class="beta">ALPHA</span></div>
     <button class="new-chat" id="newChat">＋ New intelligence session</button>
-    <button class="vault-button" id="vaultButton">◇ 33jane Vault <span class="vault-state" id="vaultState">locked</span></button>
+    <button class="vault-button" id="vaultButton">◇ Jane Vault <span class="vault-state" id="vaultState">locked</span></button>
     <button class="vault-button" id="networkButton">◎ Network Console <span class="vault-state" id="networkState">loading</span></button>
     <button class="vault-button" id="studioButton">✦ Creator Studio <span class="vault-state">image · video · audio</span></button>
     <button class="vault-button" id="researchButton">⌕ Deep Research <span class="vault-state">private split</span></button>
@@ -208,7 +208,7 @@
     <button class="vault-button" id="charactersButton">◌ Characters & Agents <span class="vault-state">persistent</span></button>
     <button class="vault-button" id="settingsButton">⚙ Chat Controls <span class="vault-state">system · sampling · agentic</span></button>
     <button class="vault-button" id="backupButton">↗ Backup & Share <span class="vault-state">encrypted</span></button>
-    <button class="vault-button" id="installButton" style="display:none">↓ Install 33jane <span class="vault-state">desktop/mobile</span></button>
+    <button class="vault-button" id="installButton" style="display:none">↓ Install Jane <span class="vault-state">desktop/mobile</span></button>
     <div><div class="navlabel">Local history</div><div class="history" id="history"></div></div>
     <div class="sidebar-bottom">
       <div class="privacy-mini"><span class="shield"></span><span>History stays in this browser</span></div>
@@ -246,7 +246,7 @@
 
     <div class="composer-wrap">
       <div class="composer">
-        <textarea id="prompt" placeholder="Ask anything. 33jane will choose the intelligence..." rows="2"></textarea>
+        <textarea id="prompt" placeholder="Ask anything. Jane will choose the intelligence..." rows="2"></textarea>
         <div class="composer-bottom">
           <div class="tools">
             <button class="tool" id="attach">＋ File</button>
@@ -257,12 +257,12 @@
           <button class="send" id="send">Send</button>
         </div>
       </div>
-      <div class="disclaimer">Prompts are processed offchain. Local history is not uploaded by 33jane.</div>
+      <div class="disclaimer">Prompts are processed offchain. Local history is not uploaded by Jane.</div>
     </div>
   </main>
 
   <aside class="inspector">
-    <h3>33jane intelligence router</h3>
+    <h3>Jane intelligence router</h3>
     <div class="panel">
       <div class="panel-title">Selected route</div>
       <div class="route-main" id="routeModel">Waiting for a task</div>
@@ -296,7 +296,7 @@
     <div class="panel">
       <div class="panel-title">Split inference</div>
       <div class="route-main" id="splitState">Single route</div>
-      <div class="route-sub" id="splitReason">33jane will separate private and public work when needed.</div>
+      <div class="route-sub" id="splitReason">Jane will separate private and public work when needed.</div>
     </div>
     <div class="panel">
       <div class="panel-title">Privacy receipt</div>
@@ -331,7 +331,7 @@
 
 <div class="modal-backdrop" id="vaultModal">
   <div class="modal">
-    <div class="modal-head"><h2>33jane Vault</h2><button class="tool" id="vaultClose">Close</button></div>
+    <div class="modal-head"><h2>Jane Vault</h2><button class="tool" id="vaultClose">Close</button></div>
     <div id="vaultLocked">
       <p class="route-sub">Vault entries are AES-GCM encrypted in this browser. Your passphrase is never stored.</p>
       <input id="vaultPassphrase" type="password" placeholder="Vault passphrase" autocomplete="off" />
@@ -389,7 +389,7 @@
 
 <div class="modal-backdrop" id="networkModal">
   <div class="modal">
-    <div class="modal-head"><h2>33jane Network Console</h2><button class="tool" id="networkClose">Close</button></div>
+    <div class="modal-head"><h2>Jane Network Console</h2><button class="tool" id="networkClose">Close</button></div>
     <p class="route-sub">Live view of Jane's agent, compute, enterprise and optional 33G infrastructure. Secrets and private prompts are never shown here.</p>
     <div class="hero-grid" style="grid-template-columns:repeat(2,1fr);margin-top:16px">
       <div class="hero-card"><strong id="networkNodes">0 compute nodes</strong><small id="networkCapacity">0 requests/min capacity</small></div>
@@ -412,7 +412,7 @@
 
 <div class="modal-backdrop" id="studioModal">
   <div class="modal">
-    <div class="modal-head"><h2>33jane Creator Studio</h2><button class="tool" id="studioClose">Close</button></div>
+    <div class="modal-head"><h2>Jane Creator Studio</h2><button class="tool" id="studioClose">Close</button></div>
     <div class="studio-tabs" id="studioTabs">
       <button class="active" data-modality="image">Image</button>
       <button data-modality="video">Video</button>
@@ -420,7 +420,7 @@
       <button data-modality="speech">Voice</button>
     </div>
     <select class="policy-input" id="studioOperation"></select>
-    <textarea class="policy-input" id="studioPrompt" style="min-height:110px" placeholder="Describe what you want 33jane to create..."></textarea>
+    <textarea class="policy-input" id="studioPrompt" style="min-height:110px" placeholder="Describe what you want Jane to create..."></textarea>
     <input class="policy-input" id="studioInputUrl" placeholder="Optional input URL" />
     <div class="vault-actions"><button class="primary" id="studioGenerate">Route + create</button><button id="studioVoiceLive" style="display:none">Start realtime voice</button></div>
     <audio id="studioVoiceAudio" autoplay></audio>
@@ -430,7 +430,7 @@
 
 <div class="modal-backdrop" id="researchModal">
   <div class="modal">
-    <div class="modal-head"><h2>33jane Deep Research</h2><button class="tool" id="researchClose">Close</button></div>
+    <div class="modal-head"><h2>Jane Deep Research</h2><button class="tool" id="researchClose">Close</button></div>
     <p class="route-sub">Public research is separated from confidential context so search providers do not receive private source material.</p>
     <textarea class="policy-input" id="researchQuery" style="min-height:120px" placeholder="What should Jane research? Paste URLs too — Jane can scrape them without exposing private context."></textarea>
     <label class="policy-check"><input id="researchIncludeX" type="checkbox" /> include X/Twitter search when configured</label>
@@ -470,7 +470,7 @@
     vaultEntries: [],
     contextSummary: {originalChars:0,sentChars:0,selectedChunks:0,sources:[]},
     pendingSettlement: null,
-    principal: localStorage.getItem("33jane_principal") || ("browser-"+(crypto.randomUUID?crypto.randomUUID():Date.now())),
+    principal: localStorage.getItem("jane_principal") || ("browser-"+(crypto.randomUUID?crypto.randomUUID():Date.now())),
     edgeCacheEnabled: true,
     studioModality: "image",
     characterId: null,
@@ -615,12 +615,12 @@
     var iv=crypto.getRandomValues(new Uint8Array(12));
     var data=new TextEncoder().encode(JSON.stringify(state.vaultEntries));
     var encrypted=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv:iv},state.vaultKey,data));
-    var current=JSON.parse(localStorage.getItem("33jane_vault_v1")||"null")||{};
-    localStorage.setItem("33jane_vault_v1",JSON.stringify({salt:current.salt,iv:bytesToB64(iv),ciphertext:bytesToB64(encrypted)}));
+    var current=JSON.parse(localStorage.getItem("jane_vault_v1")||"null")||{};
+    localStorage.setItem("jane_vault_v1",JSON.stringify({salt:current.salt,iv:bytesToB64(iv),ciphertext:bytesToB64(encrypted)}));
     renderVault();
   }
   async function unlockVault(passphrase){
-    var stored=JSON.parse(localStorage.getItem("33jane_vault_v1")||"null");
+    var stored=JSON.parse(localStorage.getItem("jane_vault_v1")||"null");
     var salt=stored&&stored.salt?b64ToBytes(stored.salt):crypto.getRandomValues(new Uint8Array(16));
     var key=await deriveVaultKey(passphrase,salt);
     var entries=[];
@@ -630,7 +630,7 @@
         entries=JSON.parse(new TextDecoder().decode(plain));
       }catch(_){throw new Error("Wrong passphrase or corrupted Vault");}
     }else{
-      localStorage.setItem("33jane_vault_v1",JSON.stringify({salt:bytesToB64(salt),iv:"",ciphertext:""}));
+      localStorage.setItem("jane_vault_v1",JSON.stringify({salt:bytesToB64(salt),iv:"",ciphertext:""}));
     }
     state.vaultKey=key;state.vaultEntries=Array.isArray(entries)?entries:[];
     el("vaultLocked").style.display="none";el("vaultUnlocked").style.display="block";el("vaultState").textContent="unlocked";
@@ -733,7 +733,7 @@
   }
 
   async function edgeCacheKey(payload){
-    return "33jane_edge_"+await localHash(JSON.stringify({
+    return "jane_edge_"+await localHash(JSON.stringify({
       mode:payload.mode,
       messages:payload.messages,
       clientContext:payload.clientContext
@@ -798,7 +798,7 @@
   function spendingPolicy(){
     if(!el("policyEnabled").checked)return undefined;
     var principal=el("policyPrincipal").value.trim()||state.principal;
-    localStorage.setItem("33jane_principal",principal);state.principal=principal;
+    localStorage.setItem("jane_principal",principal);state.principal=principal;
     var policy={
       principal:principal,
       maxCostUsdPerRequest:Number(el("policyPerRequest").value||0.05),
@@ -962,7 +962,7 @@
 
     if(e2eeReady){
       el("routeModel").textContent="Attested E2EE enclave";
-      el("routeReason").textContent="Plaintext stays in this browser; the 33jane gateway receives ciphertext only.";
+      el("routeReason").textContent="Plaintext stays in this browser; the Jane gateway receives ciphertext only.";
       el("splitState").textContent="Enclave route";
       el("splitReason").textContent="Routing and inference are delegated inside the confidential boundary.";
       showEdge({task:"confidential",cacheEligible:false,recommendations:["server-side plaintext previews disabled for E2EE"]},false);
@@ -1010,7 +1010,7 @@
 
         state.messages.push({role:"assistant",content:privateAnswer});
         addMessage("assistant",rehydrate(privateAnswer,scan.map),{
-          model:decrypted.model||"33jane-e2ee",
+          model:decrypted.model||"jane-e2ee",
           cost:decrypted.costUsd,
           savings:decrypted.savingsPercent,
           privateCount:scan.count
@@ -1037,7 +1037,7 @@
         if(data.route) setRoute(data.route);
         var message = data.error === "NO_LIVE_AI_PROVIDER_CONFIGURED"
           ? "The router is working, but no live inference provider is configured on this deployment yet. Add an OpenAI, Groq, OpenRouter, or private endpoint key to execute the selected route."
-          : "33jane could not complete this route: " + (data.error || "unknown error");
+          : "Jane could not complete this route: " + (data.error || "unknown error");
         addMessage("assistant",message,{privateCount:scan.count});
       }else{
         var answer = rehydrate(data.answer||"",scan.map);
@@ -1046,9 +1046,9 @@
         var agentMeta=finalAgentStep&&finalAgentStep.output?finalAgentStep.output:{};
         var modelInfo=data.model||agentMeta.model||{};
         var routeInfo=data.route||agentMeta.route||{};
-        state.lastRequestId = data.id; state.lastModelId = modelInfo.id||"33jane-agentic";
+        state.lastRequestId = data.id; state.lastModelId = modelInfo.id||"jane-agentic";
         addMessage("assistant",answer,{
-          model:modelInfo.id||"33jane-agentic",
+          model:modelInfo.id||"jane-agentic",
           cost:routeInfo.actualCostUsd,
           savings:routeInfo.estimatedSavingsPercent,
           privateCount:scan.count,
@@ -1062,7 +1062,7 @@
         saveHistory();
       }
     }catch(err){
-      addMessage("assistant","Network error while contacting the 33jane router.",{privateCount:scan.count});
+      addMessage("assistant","Network error while contacting the Jane router.",{privateCount:scan.count});
     }finally{
       send.disabled = false; send.textContent = "Send"; promptEl.focus();
     }
@@ -1078,12 +1078,12 @@
 
   function saveHistory(){
     try{
-      var all = JSON.parse(localStorage.getItem("33jane_history") || "[]");
+      var all = JSON.parse(localStorage.getItem("jane_history") || "[]");
       var first = state.messages.find(function(m){return m.role==="user";});
       var item = {id:state.currentId,title:(first ? first.content : "New chat").slice(0,70),messages:state.messages.slice(-30),mode:state.mode,updated:Date.now()};
       all = all.filter(function(x){return x.id !== item.id;});
       all.unshift(item); all = all.slice(0,20);
-      localStorage.setItem("33jane_history",JSON.stringify(all));
+      localStorage.setItem("jane_history",JSON.stringify(all));
       renderHistory();
     }catch(_){}
   }
@@ -1091,7 +1091,7 @@
   function renderHistory(){
     var holder = el("history"); holder.innerHTML = "";
     try{
-      var all = JSON.parse(localStorage.getItem("33jane_history") || "[]");
+      var all = JSON.parse(localStorage.getItem("jane_history") || "[]");
       all.forEach(function(item){
         var b=document.createElement("button");b.textContent=item.title;b.title=item.title;
         b.onclick=function(){loadChat(item);};holder.appendChild(b);
@@ -1110,12 +1110,12 @@
   function reset(){
     document.body.classList.remove("conversation-started");
     state.messages=[];state.currentId=crypto.randomUUID?crypto.randomUUID():String(Date.now());state.privacyMap={};
-    state.characterId=null;state.characterName=null;promptEl.placeholder="Ask anything. 33jane will choose the intelligence...";
+    state.characterId=null;state.characterName=null;promptEl.placeholder="Ask anything. Jane will choose the intelligence...";
     messagesEl.innerHTML="";hero.style.display="block";promptEl.value="";setPrivacy({count:0,categories:[]});
     el("routeModel").textContent="Waiting for a task";el("routeReason").textContent="Auto balances quality, cost, speed and privacy.";
     el("routeCost").textContent="—";el("routeSavings").textContent="—";el("routeQuality").textContent="—";el("qualityBar").style.width="0";
     setContext({originalChars:0,sentChars:0,selectedChunks:0,sources:[]});
-    el("splitState").textContent="Single route";el("splitReason").textContent="33jane will separate private and public work when needed.";
+    el("splitState").textContent="Single route";el("splitReason").textContent="Jane will separate private and public work when needed.";
     el("receiptRetention").textContent="—";el("receiptPrivacy").textContent="—";el("receiptHash").textContent="Receipt appears after successful inference.";
     showSettlement(null);showPolicy(null);el("monadTx").textContent="";
     el("edgeTask").textContent="—";el("edgeCache").textContent="—";el("edgeNotes").textContent="Local-first planning appears after a request.";
@@ -1188,11 +1188,11 @@
     var passphrase=el("backupPassphrase").value;
     if(passphrase.length<8){alert("Use a backup passphrase of at least 8 characters.");return;}
     try{
-      var history=JSON.parse(localStorage.getItem("33jane_history")||"[]");
+      var history=JSON.parse(localStorage.getItem("jane_history")||"[]");
       var bundle=await encryptJsonWithPassphrase({createdAt:new Date().toISOString(),history:history},passphrase);
       var blob=new Blob([JSON.stringify(bundle)],{type:"application/json"});
       var url=URL.createObjectURL(blob),link=document.createElement("a");
-      link.href=url;link.download="33jane-chat-backup-"+new Date().toISOString().slice(0,10)+".jane";
+      link.href=url;link.download="jane-chat-backup-"+new Date().toISOString().slice(0,10)+".jane";
       link.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
     }catch(error){alert(error.message||"Backup export failed");}
   };
@@ -1206,7 +1206,7 @@
       var bundle=JSON.parse(await file.text());
       var restored=await decryptJsonWithPassphrase(bundle,passphrase);
       if(!restored||!Array.isArray(restored.history))throw new Error("Backup has no chat history");
-      localStorage.setItem("33jane_history",JSON.stringify(restored.history.slice(0,100)));
+      localStorage.setItem("jane_history",JSON.stringify(restored.history.slice(0,100)));
       renderHistory();el("shareStatus").textContent="Encrypted backup restored locally.";
     }catch(error){alert(error.message||"Backup import failed");}
   };
@@ -1215,7 +1215,7 @@
     if(!state.messages.length){el("shareStatus").textContent="There is no conversation to share yet.";return;}
     try{
       var payload=await createSecureSharePayload({
-        title:(state.messages.find(function(message){return message.role==="user";})||{content:"Shared 33jane chat"}).content.slice(0,80),
+        title:(state.messages.find(function(message){return message.role==="user";})||{content:"Shared Jane chat"}).content.slice(0,80),
         mode:state.mode,
         messages:state.messages.slice(-30)
       });
@@ -1405,7 +1405,7 @@
         var title=document.createElement("strong");title.textContent=character.name;
         var detail=document.createElement("small");detail.textContent=(character.description||"Persistent Jane character")+" · "+(character.defaultMode||"auto");
         button.appendChild(title);button.appendChild(detail);
-        button.onclick=function(){state.characterId=character.id;state.characterName=character.name;promptEl.placeholder="Talk to "+character.name+" through 33jane…";closeModal("charactersModal");promptEl.focus();};
+        button.onclick=function(){state.characterId=character.id;state.characterName=character.name;promptEl.placeholder="Talk to "+character.name+" through Jane…";closeModal("charactersModal");promptEl.focus();};
         holder.appendChild(button);
       });
     }catch(error){el("charactersList").innerHTML='<div class="route-sub">Characters unavailable.</div>';}
@@ -1421,7 +1421,7 @@
 
     el("settleButton").onclick=settleWithWallet;
   el("policyPrincipal").value=state.principal;
-  localStorage.setItem("33jane_principal",state.principal);
+  localStorage.setItem("jane_principal",state.principal);
 
   fetch("/api/ai/health").then(function(r){return r.json();}).then(function(d){
     el("apiStatus").textContent=d.configuredProviders&&d.configuredProviders.length?d.configuredProviders.length+" providers live":"router online · add provider key";

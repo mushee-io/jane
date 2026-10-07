@@ -1,4 +1,4 @@
-# 33jane build status
+# Jane build status
 
 ## Code-complete milestone stack
 
@@ -25,7 +25,7 @@
 - agent accounts
 - onchain Agent Wallet + factory
 - provider marketplace
-- 33jane-owned compute adapter
+- jane-owned compute adapter
 - edge intelligence/cache
 - enterprise policy gateway
 - optional fixed-supply 33G utility
@@ -99,4 +99,4 @@ to distinguish code capability from live external configuration.
 
 Raw prompts, AI responses, Vault contents, local redaction maps and private documents are not intentionally written to Monad.
 
-The confidential E2EE route is designed so the normal 33jane gateway receives ciphertext only; production confidentiality requires a genuine verified enclave behind the configured confidential gateway.
+The confidential E2EE route is designed so the normal Jane gateway receives ciphertext only; production confidentiality requires a genuine verified enclave behind the configured confidential gateway.

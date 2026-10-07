@@ -140,7 +140,7 @@ export class JaneAgenticService {
             ? [
                 {
                   role: "system" as const,
-                  content: "You are 33jane Agentic. Complete the user's objective using only the tool evidence provided where factual claims depend on external data. Be concise and identify uncertainty."
+                  content: "You are Jane Agentic. Complete the user's objective using only the tool evidence provided where factual claims depend on external data. Be concise and identify uncertainty."
                 },
                 {
                   role: "user" as const,

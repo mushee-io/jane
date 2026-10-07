@@ -1,0 +1,23 @@
+{
+  "name": "@cl-monad/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cl-monad/sdk": "0.2.0",
+    "@hono/node-server": "^1.19.1",
+    "hono": "^4.9.6",
+    "viem": "^2.37.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

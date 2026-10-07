@@ -1,0 +1,16 @@
+{
+  "name": "cl-monad",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build:apps": "npm run build --workspaces --if-present",
+    "preflight:protocols": "node scripts/preflight.mjs protocols",
+    "preflight:deployment": "node scripts/preflight.mjs deployment",
+    "preflight": "node scripts/preflight.mjs all",
+    "evidence": "node scripts/write-evidence.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

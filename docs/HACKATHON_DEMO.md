@@ -1,8 +1,8 @@
-# 33jane Monad Metropolis demo
+# Jane Monad Metropolis demo
 
 ## One-line pitch
 
-**33jane is the private intelligence router for the agent economy: it chooses the best AI for each task by quality, cost and privacy, then uses Monad for programmable pay-per-inference settlement and verifiable execution receipts.**
+**Jane is the private intelligence router for the agent economy: it chooses the best AI for each task by quality, cost and privacy, then uses Monad for programmable pay-per-inference settlement and verifiable execution receipts.**
 
 ## 90-second demo
 
@@ -104,7 +104,7 @@ Show:
 
 Finish with:
 
-> The internet should not have to choose an AI. 33jane chooses intelligence for it.
+> The internet should not have to choose an AI. Jane chooses intelligence for it.
 
 ## What not to claim
 

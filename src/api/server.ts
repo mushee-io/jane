@@ -47,5 +47,5 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`33jane listening on http://${host}:${port}`);
+  console.log(`Jane listening on http://${host}:${port}`);
 });

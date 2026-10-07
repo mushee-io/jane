@@ -38,14 +38,14 @@ function candidate(m: ModelProfile, cost = 0.02): RouteCandidate {
   };
 }
 
-test("OpenAI-compatible virtual model names map to 33jane modes", () => {
-  assert.equal(modelToMode("33jane-auto"), "auto");
-  assert.equal(modelToMode("33jane-code"), "code");
-  assert.equal(modelToMode("33jane-confidential"), "confidential");
-  assert.equal(openAIModels().some((entry) => entry.id === "33jane-private"), true);
+test("OpenAI-compatible virtual model names map to Jane modes", () => {
+  assert.equal(modelToMode("jane-auto"), "auto");
+  assert.equal(modelToMode("jane-code"), "code");
+  assert.equal(modelToMode("jane-confidential"), "confidential");
+  assert.equal(openAIModels().some((entry) => entry.id === "jane-private"), true);
 
   const req = toJaneRequest({
-    model: "33jane-reason",
+    model: "jane-reason",
     messages: [{ role: "user", content: "reason about this" }],
     stream: false,
     jane: {

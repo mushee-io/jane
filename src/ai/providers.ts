@@ -38,8 +38,8 @@ function configFor(model: ModelProfile): ProviderConfig {
       baseUrl: process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1",
       apiKey: process.env.OPENROUTER_API_KEY,
       headers: {
-        "HTTP-Referer": process.env.JANE_PUBLIC_URL ?? "https://33jane.vercel.app",
-        "X-Title": "33jane"
+        "HTTP-Referer": process.env.JANE_PUBLIC_URL ?? "https://jane-seven-sooty.vercel.app",
+        "X-Title": "Jane"
       }
     };
   }

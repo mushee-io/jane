@@ -11,6 +11,10 @@
       "destination": "/jane.html"
     },
     {
+      "source": "/clearing",
+      "destination": "/clearing/index.html"
+    },
+    {
       "source": "/v1/:path*",
       "destination": "/api/index?v1=:path*"
     },

@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import "./JaneAgentWallet.sol";
 
 /// @title JaneAgentWalletFactory
-/// @notice Deploys budget-constrained agent wallets that settle inference through 33jane.
+/// @notice Deploys budget-constrained agent wallets that settle inference through Jane.
 contract JaneAgentWalletFactory {
     address public immutable settlement;
 

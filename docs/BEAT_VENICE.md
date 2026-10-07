@@ -1,10 +1,10 @@
-# 33jane — parity + superiority checklist
+# Jane — parity + superiority checklist
 
 The objective is not to ship a Venice clone. The objective is to match the useful product surface of a leading private multi-model AI platform, then make the same jobs easier to route, cheaper to execute, and more privacy-minimized.
 
 ## Product surface
 
-| Capability | 33jane implementation |
+| Capability | Jane implementation |
 |---|---|
 | Multi-model chat | Auto/Fast/Reason/Code/Vision/Private/Confidential |
 | Large model catalog | JSON-configurable LLM + multimodal catalog |
@@ -46,7 +46,7 @@ The objective is not to ship a Venice clone. The objective is to match the usefu
 | Verifiable execution | Monad InferenceSettled receipts |
 | Optional token utility | fixed-supply 33G + staking utility |
 
-## How 33jane is intended to win
+## How Jane is intended to win
 
 1. **Do not make users choose models.** Jane Auto should be the default.
 2. **Optimize cost per successful task, not sticker token price.**

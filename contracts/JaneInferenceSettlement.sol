@@ -6,7 +6,7 @@ interface IERC20Minimal {
 }
 
 /// @title JaneInferenceSettlement
-/// @notice Minimal settlement and receipt-anchor contract for 33jane inference.
+/// @notice Minimal settlement and receipt-anchor contract for Jane inference.
 /// @dev Prompts and responses never touch this contract. Only hashes and payment metadata do.
 contract JaneInferenceSettlement {
     error InvalidProvider();

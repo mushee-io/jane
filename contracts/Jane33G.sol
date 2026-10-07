@@ -7,7 +7,7 @@ interface IERC20StakeToken {
 }
 
 /// @title 33G
-/// @notice Fixed-supply optional utility token for the 33jane ecosystem.
+/// @notice Fixed-supply optional utility token for the Jane ecosystem.
 /// @dev No mint function exists after deployment. The full fixed supply is minted to the treasury.
 contract Jane33G {
     string public constant name = "33G";
@@ -61,7 +61,7 @@ contract Jane33G {
 }
 
 /// @title Jane33GUtility
-/// @notice Optional staking utility. Benefits apply to 33jane platform fees/limits, not upstream provider obligations.
+/// @notice Optional staking utility. Benefits apply to Jane platform fees/limits, not upstream provider obligations.
 contract Jane33GUtility {
     IERC20StakeToken public immutable token;
     uint256 public constant LOCK_PERIOD = 7 days;
