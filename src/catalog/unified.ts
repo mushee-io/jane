@@ -36,8 +36,8 @@ export function unifiedCatalog(): UnifiedModel[] {
   const defaults: UnifiedModel[] = [
     {
       id: "jane-auto-text",
-      label: "33jane Auto",
-      provider: "33jane",
+      label: "Jane Auto",
+      provider: "jane",
       modality: "text",
       capabilities: ["chat","reasoning","code","vision-routing"],
       qualityScore: 0.90,
@@ -49,7 +49,7 @@ export function unifiedCatalog(): UnifiedModel[] {
     {
       id: "jane-image-auto",
       label: "33jane Image Auto",
-      provider: "33jane",
+      provider: "jane",
       modality: "image",
       capabilities: ["text-to-image","image-edit","inpaint","upscale","background-remove"],
       qualityScore: 0.90,
@@ -61,7 +61,7 @@ export function unifiedCatalog(): UnifiedModel[] {
     {
       id: "jane-video-auto",
       label: "33jane Video Auto",
-      provider: "33jane",
+      provider: "jane",
       modality: "video",
       capabilities: ["text-to-video","image-to-video","extend","upscale"],
       qualityScore: 0.89,
@@ -73,7 +73,7 @@ export function unifiedCatalog(): UnifiedModel[] {
     {
       id: "jane-audio-auto",
       label: "33jane Audio Auto",
-      provider: "33jane",
+      provider: "jane",
       modality: "audio",
       capabilities: ["music","sfx","transcription"],
       qualityScore: 0.88,
@@ -85,7 +85,7 @@ export function unifiedCatalog(): UnifiedModel[] {
     {
       id: "jane-voice-auto",
       label: "33jane Voice Auto",
-      provider: "33jane",
+      provider: "jane",
       modality: "speech",
       capabilities: ["tts","stt","speech-to-speech","realtime"],
       qualityScore: 0.90,
