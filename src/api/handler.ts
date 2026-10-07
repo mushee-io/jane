@@ -109,7 +109,7 @@ function requireJaneApiKey(request: Request): Response | null {
   const authorization = request.headers.get("authorization") ?? "";
   const token = authorization.replace(/^Bearer\s+/i, "");
   if (!configured.includes(token)) {
-    return openAIError("Invalid or missing 33jane API key.", 401, "invalid_api_key");
+    return openAIError("Invalid or missing Jane API key.", 401, "invalid_api_key");
   }
   return null;
 }
@@ -579,7 +579,7 @@ export function createApiHandler() {
             messages: [
               {
                 role: "system",
-                content: "You are 33jane Research. Synthesize only from the supplied public sources. Cite source numbers like [1]. Do not infer private data that is not in the sanitized query."
+                content: "You are Jane Research. Synthesize only from the supplied public sources. Cite source numbers like [1]. Do not infer private data that is not in the sanitized query."
               },
               {
                 role: "user",
