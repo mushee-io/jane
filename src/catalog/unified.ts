@@ -48,7 +48,7 @@ export function unifiedCatalog(): UnifiedModel[] {
     },
     {
       id: "jane-image-auto",
-      label: "33jane Image Auto",
+      label: "Jane Image Auto",
       provider: "jane",
       modality: "image",
       capabilities: ["text-to-image","image-edit","inpaint","upscale","background-remove"],
@@ -60,7 +60,7 @@ export function unifiedCatalog(): UnifiedModel[] {
     },
     {
       id: "jane-video-auto",
-      label: "33jane Video Auto",
+      label: "Jane Video Auto",
       provider: "jane",
       modality: "video",
       capabilities: ["text-to-video","image-to-video","extend","upscale"],
@@ -72,7 +72,7 @@ export function unifiedCatalog(): UnifiedModel[] {
     },
     {
       id: "jane-audio-auto",
-      label: "33jane Audio Auto",
+      label: "Jane Audio Auto",
       provider: "jane",
       modality: "audio",
       capabilities: ["music","sfx","transcription"],
@@ -84,7 +84,7 @@ export function unifiedCatalog(): UnifiedModel[] {
     },
     {
       id: "jane-voice-auto",
-      label: "33jane Voice Auto",
+      label: "Jane Voice Auto",
       provider: "jane",
       modality: "speech",
       capabilities: ["tts","stt","speech-to-speech","realtime"],
