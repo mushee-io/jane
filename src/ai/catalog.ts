@@ -80,7 +80,7 @@ export function modelCatalog(): ModelProfile[] {
       id: "jane-compute",
       provider: "jane",
       model: process.env.JANE_COMPUTE_MODEL ?? "jane-open-model",
-      label: "33jane Compute",
+      label: "Jane Compute",
       capabilities: ["general", "fast", "reasoning", "code", "vision"],
       contextWindow: num("JANE_COMPUTE_CONTEXT_WINDOW", 131072),
       inputCostPerMillion: num("JANE_COMPUTE_INPUT_COST_PER_M", 0.08),
