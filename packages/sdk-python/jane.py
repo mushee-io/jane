@@ -2,7 +2,7 @@ import json
 import urllib.request
 
 class Jane:
-    def __init__(self, api_key=None, base_url="https://api.33jane.ai", org_id=None, actor_id=None, department=None, agent_account_id=None):
+    def __init__(self, api_key=None, base_url="https://jane-seven-sooty.vercel.app", org_id=None, actor_id=None, department=None, agent_account_id=None):
         self.api_key=api_key
         self.base_url=base_url.rstrip("/")
         self.extra_headers={}
