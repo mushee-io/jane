@@ -7,6 +7,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/jane",
+      "destination": "/jane.html"
+    },
+    {
       "source": "/v1/:path*",
       "destination": "/api/index?v1=:path*"
     },
