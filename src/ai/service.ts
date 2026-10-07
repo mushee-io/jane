@@ -83,7 +83,7 @@ export class JaneAIService {
     const models = this.allModels();
     return {
       status: "ok",
-      service: "33jane-ai",
+      service: "jane-ai",
       milestones: {
         chat: true,
         multiModelRouter: true,
@@ -289,7 +289,7 @@ export class JaneAIService {
 
         return {
           id: liveDecision.requestId,
-          object: "33jane.response",
+          object: "jane.response",
           created: new Date().toISOString(),
           mode: effectiveRequest.mode,
           answer: completion.content,
