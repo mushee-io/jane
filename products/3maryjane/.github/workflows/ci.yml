@@ -1,0 +1,38 @@
+name: CL CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  forge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Forge build
+        run: forge build
+      - name: Deployable contract sizes
+        run: forge build --sizes --skip script --skip test
+      - name: Forge tests
+        run: forge test -vvv
+
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install workspace dependencies
+        run: npm install --ignore-scripts
+      - name: Typecheck workspaces
+        run: npm run typecheck
+      - name: Build SDK, API and terminal
+        run: npm run build:apps
