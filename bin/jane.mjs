@@ -7,8 +7,8 @@ async function call(path,body){
   const text=await response.text();if(!response.ok){console.error(text);process.exit(1)}console.log(text)
 }
 if(command==="models") await call("/v1/models");
-else if(command==="chat") await call("/v1/chat/completions",{model:process.env.JANE_MODEL||"33jane-auto",messages:[{role:"user",content:rest.join(" ")}]});
+else if(command==="chat") await call("/v1/chat/completions",{model:process.env.JANE_MODEL||"jane-auto",messages:[{role:"user",content:rest.join(" ")}]});
 else if(command==="research") await call("/api/research",{mode:"auto",messages:[{role:"user",content:rest.join(" ")}]});
 else{
-  console.log("33jane CLI\n  jane models\n  jane chat <prompt>\n  jane research <query>\nEnvironment: JANE_BASE_URL, JANE_API_KEY, JANE_MODEL");
+  console.log("Jane CLI\n  jane models\n  jane chat <prompt>\n  jane research <query>\nEnvironment: JANE_BASE_URL, JANE_API_KEY, JANE_MODEL");
 }
