@@ -1,5 +1,24 @@
 # Jane
 
+**One repository for Jane AI and the 3maryjane Clearing House.**
+
+This repository is now the consolidated Jane product:
+
+- **Jane AI** — the private multi-model AI platform built to be simpler, smarter and cheaper than Venice-style model hubs.
+- **3maryjane Clearing House** — the Monad cross-protocol clearing, portfolio-margin, risk, routing and execution system, imported under `products/3maryjane/`.
+- **No 33jane dependency or branding.** 33jane is a separate CoW Protocol / DeFi project and is intentionally outside this repository.
+
+Product routes:
+
+```text
+/           Jane homepage
+/jane       Jane AI workspace
+/clearing   3maryjane Clearing House
+```
+
+The standalone 3maryjane repository/deployment can remain as a mirror during migration, but Jane is the combined source-of-truth going forward.
+
+
 **Private intelligence routing for the internet.**
 
 Jane gives people and software one place to use the best AI models without having to decide which model to use, overpay for simple work, or expose more private context than necessary.
