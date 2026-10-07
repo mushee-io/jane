@@ -1,14 +1,14 @@
-# 33jane
+# Jane
 
 **Private intelligence routing for the internet.**
 
-33jane gives people and software one place to use the best AI models without having to decide which model to use, overpay for simple work, or expose more private context than necessary.
+Jane gives people and software one place to use the best AI models without having to decide which model to use, overpay for simple work, or expose more private context than necessary.
 
-> **The internet should not have to choose an AI. 33jane chooses intelligence for it.**
+> **The internet should not have to choose an AI. Jane chooses intelligence for it.**
 
 ## Milestones 1–35
 
-### 1. Core 33jane Chat
+### 1. Core Jane Chat
 The repository now ships a responsive AI chat product with:
 
 - Auto, Fast, Reason, Code, Vision and Private modes
@@ -19,7 +19,7 @@ The repository now ships a responsive AI chat product with:
 - desktop and mobile layouts
 
 ### 2. Multi-model Intelligence Router
-33jane classifies each request and scores available routes using:
+Jane classifies each request and scores available routes using:
 
 - task capability
 - quality
@@ -36,10 +36,10 @@ Current adapters support:
 - OpenRouter
 - a custom OpenAI-compatible confidential endpoint
 
-If the selected provider fails, 33jane can try the next eligible route.
+If the selected provider fails, Jane can try the next eligible route.
 
 ### 3. Price Optimizer
-33jane estimates the expected input/output token cost for eligible models and chooses the economical route subject to a quality threshold.
+Jane estimates the expected input/output token cost for eligible models and chooses the economical route subject to a quality threshold.
 
 It exposes:
 
@@ -65,7 +65,7 @@ A cheap route that repeatedly fails or causes retries becomes less attractive.
 Current telemetry is process-memory only; durable telemetry is a later milestone.
 
 ### 5. Local Privacy Firewall
-Privacy scanning happens in the browser before the prompt is sent to 33jane.
+Privacy scanning happens in the browser before the prompt is sent to Jane.
 
 Current detectors include:
 
@@ -85,7 +85,7 @@ This is the beginning of the core principle:
 
 
 ### 6. Local Context Minimization
-Large attachments are reduced in the browser before inference. 33jane scores local chunks against the user's question and sends only the most relevant excerpts.
+Large attachments are reduced in the browser before inference. Jane scores local chunks against the user's question and sends only the most relevant excerpts.
 
 The client reports:
 - original context size
@@ -96,8 +96,8 @@ The client reports:
 
 This reduces both privacy exposure and token cost.
 
-### 7. Encrypted 33jane Vault
-33jane now includes a browser-side encrypted knowledge Vault.
+### 7. Encrypted Jane Vault
+Jane now includes a browser-side encrypted knowledge Vault.
 
 - AES-256-GCM encryption through Web Crypto
 - PBKDF2-SHA256 key derivation
@@ -117,10 +117,10 @@ Confidential routes require:
 - private provider boundary
 - privacy score of at least 0.95
 
-If no configured model satisfies those conditions, 33jane blocks execution rather than silently downgrading privacy.
+If no configured model satisfies those conditions, Jane blocks execution rather than silently downgrading privacy.
 
 ### 9. Split-Inference Planner
-33jane detects requests that combine confidential source material with public/web research.
+Jane detects requests that combine confidential source material with public/web research.
 
 It creates isolated boundaries:
 
@@ -160,12 +160,12 @@ Receipts contain:
 - failover count
 - receipt hash
 
-This makes 33jane's privacy behavior inspectable instead of relying only on a marketing promise. Receipts are tamper-detectable and can be checked through `POST /api/privacy/verify`.
+This makes Jane's privacy behavior inspectable instead of relying only on a marketing promise. Receipts are tamper-detectable and can be checked through `POST /api/privacy/verify`.
 
 
 
 ### 11. OpenAI-Compatible API
-33jane now exposes OpenAI-style endpoints so existing applications can switch to the router with minimal integration work.
+Jane now exposes OpenAI-style endpoints so existing applications can switch to the router with minimal integration work.
 
 ```text
 GET  /v1/models
@@ -176,13 +176,13 @@ POST /v1/responses
 Virtual model names:
 
 ```text
-33jane-auto
-33jane-fast
-33jane-reason
-33jane-code
-33jane-vision
-33jane-private
-33jane-confidential
+jane-auto
+jane-fast
+jane-reason
+jane-code
+jane-vision
+jane-private
+jane-confidential
 ```
 
 `/v1/chat/completions` supports standard JSON responses plus SSE-compatible streaming output. The current streaming layer emits the completed upstream answer as compatible chunks; native upstream token streaming can be added later without changing the public API.
@@ -202,14 +202,14 @@ Provider resilience now includes:
 - authentication/error classification
 - failover telemetry returned with the response
 
-33jane will not silently bypass privacy policy just to make a request succeed.
+Jane will not silently bypass privacy policy just to make a request succeed.
 
 ### 13. Programmable AI Spending Policies
 Users and agents can attach budget/policy constraints to inference:
 
 - maximum USD cost per request
 - daily USD budget
-- allowed 33jane modes
+- allowed Jane modes
 - allowed provider classes
 - mandatory zero-retention
 - minimum privacy score
@@ -227,7 +227,7 @@ GET  /api/policy/usage?principal=<id>
 The browser UI includes an optional agent spending-policy panel.
 
 ### 14. Monad Pay-Per-Inference Settlement
-33jane now contains a real EVM/Monad settlement path rather than merely storing a blockchain reference.
+Jane now contains a real EVM/Monad settlement path rather than merely storing a blockchain reference.
 
 `contracts/JaneInferenceSettlement.sol`:
 
@@ -237,7 +237,7 @@ The browser UI includes an optional agent spending-policy panel.
 - keeps prompts and responses offchain
 - emits a settlement event containing only hashes and payment metadata
 
-After successful inference, 33jane can prepare a user-signable transaction containing:
+After successful inference, Jane can prepare a user-signable transaction containing:
 
 - receipt hash
 - request hash
@@ -321,7 +321,7 @@ The settlement contract emits `InferenceSettled` with:
 - settlement token
 - amount
 
-33jane verifies the transaction through the configured Monad RPC and returns an execution receipt containing the transaction hash and block number.
+Jane verifies the transaction through the configured Monad RPC and returns an execution receipt containing the transaction hash and block number.
 
 This gives the architecture two linked proofs:
 
@@ -341,7 +341,7 @@ The actual prompt, response, Vault contents and redaction map never need to be w
 
 
 ### 16. Agent Wallets
-33jane now has both an offchain agent-account policy layer and deployable onchain agent wallets.
+Jane now has both an offchain agent-account policy layer and deployable onchain agent wallets.
 
 The offchain registry gives every autonomous agent:
 - a stable agent ID
@@ -349,7 +349,7 @@ The offchain registry gives every autonomous agent:
 - optional wallet/delegate address
 - daily inference budget
 - per-request budget
-- allowed 33jane modes
+- allowed Jane modes
 - zero-retention requirement
 - minimum privacy score
 
@@ -369,7 +369,7 @@ POST /api/agents/wallet/prepare
 Admin account-management endpoints are disabled unless `JANE_ADMIN_KEY` is set.
 
 ### 17. AI Provider Marketplace
-Approved external compute providers can register model manifests with 33jane.
+Approved external compute providers can register model manifests with Jane.
 
 Each provider advertises:
 - model/capabilities
@@ -383,12 +383,12 @@ Each provider advertises:
 - capacity
 - reputation
 
-The normal 33jane router consumes these manifests as first-class routes, so marketplace providers compete directly with OpenAI, Groq, OpenRouter and Jane Compute.
+The normal Jane router consumes these manifests as first-class routes, so marketplace providers compete directly with OpenAI, Groq, OpenRouter and Jane Compute.
 
 Provider mutation endpoints require `JANE_ADMIN_KEY`; the public provider list never exposes API-key environment names or secret values.
 
-### 18. 33jane-Owned Inference
-33jane now has a dedicated `jane` provider class.
+### 18. jane-Owned Inference
+Jane now has a dedicated `jane` provider class.
 
 Configure:
 
@@ -460,7 +460,7 @@ The repository contains deployable `Jane33G` and `Jane33GUtility` contracts.
 
 The utility staking contract has three tiers and returns a platform-benefit basis-point value.
 
-Important: the benefit applies to 33jane platform fees/limits/credits. It does **not** magically reduce what an upstream model provider must be paid.
+Important: the benefit applies to Jane platform fees/limits/credits. It does **not** magically reduce what an upstream model provider must be paid.
 
 The 33G chain is intentionally environment-configurable so the final deployment can be BNB Chain, Monad, Base or another EVM chain without rewriting Jane.
 
@@ -496,7 +496,7 @@ GET  /api/network/registry/status
 POST /api/network/registry/prepare
 ```
 
-The public network console in the 33jane UI shows active nodes, capacity, regions, privacy-capable nodes, agent infrastructure, enterprise status, Monad status and optional 33G status.
+The public network console in the Jane UI shows active nodes, capacity, regions, privacy-capable nodes, agent infrastructure, enterprise status, Monad status and optional 33G status.
 
 
 
@@ -665,7 +665,7 @@ Local privacy firewall
   |
   |  minimum necessary context
   v
-33jane Router
+Jane Router
   |-- task classifier
   |-- privacy policy
   |-- quality threshold
@@ -711,7 +711,7 @@ This runs:
 
 ## Monad architecture
 
-33jane's prompts, private files and AI responses remain offchain.
+Jane's prompts, private files and AI responses remain offchain.
 
 Monad is the programmable economic and verification layer for:
 
@@ -727,7 +727,7 @@ Private intelligence offchain
 Programmable settlement on Monad
 ```
 
-This repository is the standalone **33jane AI product**. The older 33jane RWA/CoW repository remains separate and can be integrated later if desired.
+This repository is the standalone **Jane AI product**. The older Jane RWA/CoW repository remains separate and can be integrated later if desired.
 
 ## License
 
