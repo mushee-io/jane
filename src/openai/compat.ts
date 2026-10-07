@@ -13,7 +13,7 @@ const openAIContentPartSchema = z.union([
 ]);
 
 export const openAIChatSchema = z.object({
-  model: z.string().default("33jane-auto"),
+  model: z.string().default("jane-auto"),
   messages: z.array(z.object({
     role: z.enum(["system", "user", "assistant"]),
     content: z.union([z.string(), z.array(openAIContentPartSchema)])
@@ -146,16 +146,16 @@ export function openAIStream(result: any, requestedModel: string): ReadableStrea
 export function openAIModels() {
   const now = Math.floor(Date.now() / 1000);
   return ["auto","fast","reason","code","vision","private","confidential"].map((mode) => ({
-    id: `33jane-${mode}`,
+    id: `jane-${mode}`,
     object: "model",
     created: now,
-    owned_by: "33jane"
+    owned_by: "jane"
   }));
 }
 
 
 export const openAIResponsesSchema = z.object({
-  model: z.string().default("33jane-auto"),
+  model: z.string().default("jane-auto"),
   input: z.union([
     z.string(),
     z.array(z.object({
