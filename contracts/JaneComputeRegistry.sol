@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 /// @title JaneComputeRegistry
-/// @notice Bonded registry for open 33jane compute providers on Monad.
+/// @notice Bonded registry for open Jane compute providers on Monad.
 /// @dev Only hashes of provider metadata/endpoints are stored; endpoint details remain offchain.
 contract JaneComputeRegistry {
     error BondTooSmall();
