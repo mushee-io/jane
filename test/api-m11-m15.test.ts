@@ -8,8 +8,8 @@ test("OpenAI-compatible model list is exposed", async () => {
   const response = await handle(new Request("http://localhost/v1/models"));
   assert.equal(response.status, 200);
   const body = await response.json() as { data: Array<{ id: string }> };
-  assert.equal(body.data.some((model) => model.id === "33jane-auto"), true);
-  assert.equal(body.data.some((model) => model.id === "33jane-confidential"), true);
+  assert.equal(body.data.some((model) => model.id === "jane-auto"), true);
+  assert.equal(body.data.some((model) => model.id === "jane-confidential"), true);
 });
 
 test("policy evaluation endpoint accepts agent budget policy", async () => {
