@@ -19,7 +19,7 @@ interface IERC20AgentWallet {
 }
 
 /// @title JaneAgentWallet
-/// @notice Budget-constrained wallet for autonomous 33jane agents.
+/// @notice Budget-constrained wallet for autonomous Jane agents.
 /// @dev The wallet can pay inference through JaneInferenceSettlement without exposing prompts onchain.
 contract JaneAgentWallet {
     error NotOwner();
