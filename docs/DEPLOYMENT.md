@@ -1,4 +1,4 @@
-# 33jane deployment checklist
+# Jane deployment checklist
 
 This document separates what is already built from what requires deployment secrets or funded wallets.
 
