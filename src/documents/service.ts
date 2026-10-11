@@ -1,6 +1,3 @@
-import { PDFParse } from "pdf-parse";
-import * as mammoth from "mammoth";
-
 export interface DocumentExtractRequest {
   filename?: string;
   mimeType?: string;
@@ -49,6 +46,10 @@ export class JaneDocumentService {
       const bytes = Buffer.from(request.dataBase64, "base64");
 
       if (mimeType === "application/pdf" || ext === "pdf") {
+        // Load PDF parsing only when a PDF is actually requested. Keeping this out of
+        // the serverless module startup path prevents optional PDF runtime dependencies
+        // from crashing unrelated Jane API routes such as /api/ai/health.
+        const { PDFParse } = await import("pdf-parse");
         const parser = new PDFParse({ data: bytes });
         try {
           const result = await parser.getText();
@@ -61,6 +62,8 @@ export class JaneDocumentService {
         mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         || ext === "docx"
       ) {
+        // DOCX support is optional for normal chat/health routes, so lazy-load it too.
+        const mammoth = await import("mammoth");
         const result = await mammoth.extractRawText({ buffer: bytes });
         rawText = result.value ?? "";
         format = "docx";
