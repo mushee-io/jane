@@ -15,6 +15,14 @@
       "destination": "/clearing/index.html"
     },
     {
+      "source": "/api/ai/health",
+      "destination": "/api/ai-health"
+    },
+    {
+      "source": "/api/ai/chat",
+      "destination": "/api/ai-chat"
+    },
+    {
       "source": "/v1/:path*",
       "destination": "/api/index?v1=:path*"
     },
@@ -25,6 +33,12 @@
   ],
   "functions": {
     "api/index.ts": {
+      "maxDuration": 30
+    },
+    "api/ai-health.ts": {
+      "maxDuration": 30
+    },
+    "api/ai-chat.ts": {
       "maxDuration": 30
     }
   }
