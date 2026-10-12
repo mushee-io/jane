@@ -146,8 +146,35 @@
     }
     .jane-tools-popover button:hover{background:#191d25;color:#fff}
     .jane-tools-popover small{color:#68717f}
-    .app{height:calc(100vh - 64px);grid-template-columns:minmax(0,1fr)}
-    .sidebar{display:none!important}
+    .app{height:calc(100vh - 64px);grid-template-columns:260px minmax(0,1fr)}
+    .sidebar{
+      display:flex!important;background:#0b0d11;border-right:1px solid var(--line);
+      padding:14px 12px;gap:12px;min-width:0
+    }
+    .sidebar .brand{padding:2px 4px 8px}
+    .sidebar .brandmark{font-size:17px}
+    .sidebar .beta{display:none}
+    .sidebar .vault-button{display:none}
+    .sidebar .navlabel{margin:8px 8px 4px;color:#737b89}
+    .sidebar .history{flex:1;min-height:0;padding-right:2px}
+    .sidebar .history button{
+      position:relative;width:100%;padding:10px 12px;border-radius:9px;
+      color:#aeb5c0;font-size:13px
+    }
+    .sidebar .history button.active{background:#171b22;color:#fff}
+    .sidebar .history button.active:before{
+      content:"";position:absolute;left:2px;top:8px;bottom:8px;width:2px;
+      border-radius:99px;background:var(--green)
+    }
+    .sidebar-bottom{padding-top:10px}
+    .sidebar-bottom .privacy-mini:last-child{display:none}
+    .sidebar-toggle{
+      border:1px solid transparent;background:transparent;color:#a5adb9;width:36px;height:36px;
+      border-radius:9px;display:grid;place-items:center;font-size:18px
+    }
+    .sidebar-toggle:hover{background:#12151b;color:#fff}
+    body.sidebar-collapsed .app{grid-template-columns:minmax(0,1fr)}
+    body.sidebar-collapsed .sidebar{display:none!important}
     .main{min-width:0;position:relative}
     .inspector{display:none!important}
     body.show-route .inspector{
@@ -180,6 +207,15 @@
     .message{max-width:820px;margin-left:auto;margin-right:auto}
     @media(max-width:900px){
       .jane-shell-nav{padding:0 12px}.jane-shell-left .jane-nav-link.secondary{display:none}
+      .app{grid-template-columns:minmax(0,1fr)}
+      .sidebar{
+        display:none!important;position:fixed;z-index:60;left:0;top:64px;bottom:0;width:min(290px,86vw);
+        box-shadow:24px 0 60px rgba(0,0,0,.45)
+      }
+      body.sidebar-open .sidebar{display:flex!important}
+      body.sidebar-open:after{
+        content:"";position:fixed;z-index:55;inset:64px 0 0 0;background:rgba(0,0,0,.48)
+      }
       .topbar{padding:8px 10px;height:auto;justify-content:flex-start;overflow:auto}
       .topbar .status{display:none}.hero{padding-top:10vh}
       .hero-grid{grid-template-columns:repeat(2,max-content)}
@@ -195,6 +231,7 @@
 <body>
 <nav class="jane-shell-nav" aria-label="Jane">
   <div class="jane-shell-left">
+    <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Toggle conversation history" title="Conversation history">☰</button>
     <a class="jane-shell-brand" href="/"><i></i><span>Jane</span></a>
     <a class="jane-nav-link secondary" href="/">Home</a>
     <a class="jane-nav-link secondary" href="/clearing">3maryjane Clearing House</a>
@@ -219,7 +256,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand"><div class="brandmark"><span class="dot"></span>Jane</div><span class="beta">ALPHA</span></div>
-    <button class="new-chat" id="newChat">＋ New intelligence session</button>
+    <button class="new-chat" id="newChat">＋ New chat</button>
     <button class="vault-button" id="vaultButton">◇ Jane Vault <span class="vault-state" id="vaultState">locked</span></button>
     <button class="vault-button" id="networkButton">◎ Network Console <span class="vault-state" id="networkState">loading</span></button>
     <button class="vault-button" id="studioButton">✦ Creator Studio <span class="vault-state">image · video · audio</span></button>
@@ -229,9 +266,9 @@
     <button class="vault-button" id="settingsButton">⚙ Chat Controls <span class="vault-state">system · sampling · agentic</span></button>
     <button class="vault-button" id="backupButton">↗ Backup & Share <span class="vault-state">encrypted</span></button>
     <button class="vault-button" id="installButton" style="display:none">↓ Install Jane <span class="vault-state">desktop/mobile</span></button>
-    <div><div class="navlabel">Local history</div><div class="history" id="history"></div></div>
+    <div class="navlabel" id="historyLabel">Chats</div><div class="history" id="history"></div>
     <div class="sidebar-bottom">
-      <div class="privacy-mini"><span class="shield"></span><span>History stays in this browser</span></div>
+      <div class="privacy-mini"><span class="shield"></span><span id="historyStorageNote">History stays in this browser</span></div>
       <div class="privacy-mini"><span class="shield"></span><span>PII redaction runs before upload</span></div>
     </div>
   </aside>
@@ -569,6 +606,21 @@
   var messagesEl = el("messages");
   var hero = el("hero");
   var send = el("send");
+
+  function closeSidebarOnMobile(){
+    if(window.innerWidth<=900)document.body.classList.remove("sidebar-open");
+  }
+
+  el("sidebarToggle").onclick=function(){
+    if(window.innerWidth<=900){
+      document.body.classList.toggle("sidebar-open");
+    }else{
+      document.body.classList.toggle("sidebar-collapsed");
+      localStorage.setItem("jane_sidebar_collapsed",document.body.classList.contains("sidebar-collapsed")?"1":"0");
+    }
+  };
+  if(window.innerWidth>900&&localStorage.getItem("jane_sidebar_collapsed")==="1")document.body.classList.add("sidebar-collapsed");
+  window.addEventListener("resize",function(){if(window.innerWidth>900)document.body.classList.remove("sidebar-open");});
 
   function escapeHtml(value){
     return String(value).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c];});
@@ -1205,18 +1257,22 @@
   function renderHistory(){
     var holder = el("history"); holder.innerHTML = "";
     try{
+      el("historyLabel").textContent="Chats";
+      el("historyStorageNote").textContent=state.account?"Synced to your Jane account":"History stays in this browser";
       if(state.account&&state.remoteHistory.length){
         state.remoteHistory.forEach(function(item){
-          var b=document.createElement("button");b.textContent=item.title;b.title=item.title+" · synced";
-          b.onclick=function(){loadRemoteConversation(item.id);};holder.appendChild(b);
+          var b=document.createElement("button");b.textContent=item.title||"New chat";b.title=(item.title||"New chat")+" · synced";
+          b.classList.toggle("active",String(state.serverConversationId||"")===String(item.id));
+          b.onclick=function(){loadRemoteConversation(item.id);closeSidebarOnMobile();};holder.appendChild(b);
         });
       }else{
         var all = JSON.parse(localStorage.getItem("jane_history") || "[]");
         all.forEach(function(item){
-          var b=document.createElement("button");b.textContent=item.title;b.title=item.title;
-          b.onclick=function(){loadChat(item);};holder.appendChild(b);
+          var b=document.createElement("button");b.textContent=item.title||"New chat";b.title=item.title||"New chat";
+          b.classList.toggle("active",String(state.currentId||"")===String(item.id));
+          b.onclick=function(){loadChat(item);closeSidebarOnMobile();};holder.appendChild(b);
         });
-        if(!all.length) holder.innerHTML='<div style="color:#555e6b;font-size:12px;padding:8px">No saved sessions yet.</div>';
+        if(!all.length) holder.innerHTML='<div style="color:#555e6b;font-size:12px;padding:10px 8px">Your previous chats will appear here.</div>';
       }
     }catch(_){}
   }
@@ -1242,6 +1298,7 @@
       messagesEl.innerHTML="";hero.style.display="none";document.body.classList.add("conversation-started");
       state.messages.forEach(function(m){addMessage(m.role,m.content);});
       document.querySelectorAll(".mode").forEach(function(b){b.classList.toggle("active",b.dataset.mode===state.mode);});
+      renderHistory();
     }catch(_){}
   }
 
@@ -1301,6 +1358,8 @@
     messagesEl.innerHTML="";hero.style.display="none";
     state.messages.forEach(function(m){addMessage(m.role,rehydrate(m.content,{}));});
     document.querySelectorAll(".mode").forEach(function(b){b.classList.toggle("active",b.dataset.mode===state.mode);});
+    document.body.classList.add("conversation-started");
+    renderHistory();
   }
 
   function reset(){
@@ -1336,7 +1395,7 @@
   send.onclick=submit;
   promptEl.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submit();}});
   promptEl.addEventListener("input",function(){this.style.height="auto";this.style.height=Math.min(this.scrollHeight,180)+"px";});
-  el("newChat").onclick=reset;
+  el("newChat").onclick=function(){reset();renderHistory();closeSidebarOnMobile();};
   el("attach").onclick=function(){el("fileInput").click();};
   el("fileInput").onchange=async function(){
     var file=this.files&&this.files[0]; if(!file)return;
