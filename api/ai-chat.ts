@@ -1,5 +1,7 @@
 import { JaneAIService } from "../src/ai/service.js";
 import { janeRequestSchema } from "../src/ai/schemas.js";
+import { requireJaneUser } from "../src/auth/neon.js";
+import { recordUsage } from "../src/db/jane.js";
 
 export const config = { maxDuration: 30 };
 
@@ -13,6 +15,19 @@ export default {
       const input = janeRequestSchema.parse(body);
       const jane = new JaneAIService();
       const result = await jane.chat(input);
+      try{
+        const user=await requireJaneUser(request);
+        await recordUsage({
+          userId:user.id,
+          requestId:result.id,
+          modality:"text",
+          provider:result.model?.provider,
+          modelId:result.model?.id,
+          inputTokens:result.usage?.inputTokens,
+          outputTokens:result.usage?.outputTokens,
+          costUsd:result.route?.actualCostUsd
+        });
+      }catch(_){}
       return Response.json(result, {
         headers: {
           "cache-control": "no-store",
