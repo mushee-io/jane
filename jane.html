@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#08090b" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0d12" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=block" rel="stylesheet" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <script src="/assets/e2ee.js" defer></script>
   <script src="/assets/voice.js" defer></script>
@@ -226,15 +229,241 @@
       .hero-card{white-space:nowrap}
     }
 
+    /* Jane AI 2026 visual pass — applies only to /jane. */
+    :root{
+      --jane-u:min(.06410256vw,.12400794vh);
+      --jane-vu:.09920635vh;
+      --jane-orange:#f49d70;
+      --jane-card:rgba(41,41,43,.955);
+    }
+    @supports(height:100dvh){
+      :root{--jane-u:min(.06410256vw,.12400794dvh);--jane-vu:.09920635dvh}
+    }
+    html,body{height:100%;background:#0a0d12}
+    body{
+      font-family:Inter,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      font-synthesis:none;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+      text-rendering:geometricPrecision;background:#0a0d12
+    }
+    .jane-stage-bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:#0a0d12;pointer-events:none}
+    .jane-stage-bg:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,8,12,.08),rgba(6,8,12,.18) 48%,rgba(6,8,12,.42))}
+    .jane-stage-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+    .jane-shell-nav,.app,.modal-backdrop{position:relative;z-index:2}
+    .jane-shell-nav{
+      height:calc(86*var(--jane-u));min-height:64px;padding:calc(14*var(--jane-u)) max(24px,calc(225*var(--jane-u)));
+      border:0;background:transparent;backdrop-filter:none;
+      text-shadow:0 calc(1*var(--jane-u)) calc(12*var(--jane-u)) rgba(0,0,0,.32)
+    }
+    .jane-shell-left,.jane-shell-right{gap:calc(12*var(--jane-u))}
+    .jane-shell-brand{gap:calc(12*var(--jane-u));font-size:max(16px,calc(18.49*var(--jane-u)));font-weight:500;letter-spacing:-.0154em}
+    .jane-brand-logo{width:max(34px,calc(34*var(--jane-u)));height:max(34px,calc(34*var(--jane-u)));object-fit:contain;border-radius:50%;box-shadow:0 calc(1*var(--jane-u)) calc(10*var(--jane-u)) rgba(0,0,0,.30)}
+    .jane-shell-brand i{display:none}
+    .sidebar-toggle{
+      width:max(34px,calc(34*var(--jane-u)));height:max(34px,calc(34*var(--jane-u)));
+      border:1px solid rgba(255,255,255,.12);background:rgba(20,20,23,.18);color:#fff;
+      backdrop-filter:blur(14px);font-size:16px
+    }
+    .sidebar-toggle:hover{background:rgba(255,255,255,.12)}
+    .jane-nav-link,.jane-nav-btn{
+      color:#fff;font-size:max(12px,calc(15.7*var(--jane-u)));font-weight:400;letter-spacing:-.0115em;
+      text-shadow:0 calc(1*var(--jane-u)) calc(12*var(--jane-u)) rgba(0,0,0,.32)
+    }
+    .jane-nav-link:hover,.jane-nav-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+    .jane-nav-btn.primary{
+      color:#fff;border-color:rgba(255,255,255,.08);
+      background:linear-gradient(180deg,rgba(61,61,63,.92),rgba(29,29,32,.94));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 2px 14px rgba(0,0,0,.28)
+    }
+    .jane-tools-popover{background:rgba(24,24,27,.90);backdrop-filter:blur(20px);border-color:rgba(255,255,255,.09)}
+    .app{height:calc(100vh - max(64px,calc(86*var(--jane-u))));height:calc(100dvh - max(64px,calc(86*var(--jane-u))));background:transparent}
+    .sidebar{
+      background:rgba(11,13,18,.56);backdrop-filter:blur(22px) saturate(112%);
+      border-color:rgba(255,255,255,.10);box-shadow:16px 0 40px rgba(0,0,0,.12)
+    }
+    .sidebar .brandmark,.sidebar .new-chat,.sidebar .navlabel,.sidebar .history button,.sidebar .privacy-mini{color:#fff}
+    .sidebar .new-chat{background:rgba(30,31,35,.62);border-color:rgba(255,255,255,.11)}
+    .sidebar .history button:hover,.sidebar .history button.active{background:rgba(255,255,255,.10)}
+    .sidebar .history button.active:before{background:var(--jane-orange)}
+    .sidebar .shield,.dot{background:var(--jane-orange);box-shadow:0 0 20px rgba(244,157,112,.55)}
+    .main{background:transparent;grid-template-rows:auto minmax(0,1fr) auto}
+    .topbar{
+      height:calc(52*var(--jane-u));min-height:46px;border:0;background:transparent;backdrop-filter:none;
+      padding:0 max(18px,calc((100% - 760px)/2));justify-content:center
+    }
+    .modes{gap:clamp(12px,2.2vw,34px);flex-wrap:nowrap}
+    .mode{
+      padding:6px 2px;border:0;border-radius:0;background:transparent!important;
+      color:rgba(255,255,255,.68);font-size:clamp(12px,1.05vw,15px);font-weight:400;
+      letter-spacing:-.0115em;text-shadow:0 1px 12px rgba(0,0,0,.32)
+    }
+    .mode:hover{color:#fff}.mode.active{color:#fff;font-weight:500;box-shadow:inset 0 -1px 0 rgba(255,255,255,.9)}
+    .topbar .status{color:rgba(255,255,255,.72);text-shadow:0 1px 10px rgba(0,0,0,.35)}
+    .topbar .status i{background:var(--jane-orange);box-shadow:0 0 14px rgba(244,157,112,.6)}
+    body:not(.conversation-started) .chat{padding:0;overflow:hidden;scrollbar-gutter:auto}
+    body:not(.conversation-started) .hero{
+      height:100%;padding:0 0 clamp(180px,24vh,250px);display:flex!important;flex-direction:column;
+      align-items:center;justify-content:center;text-align:center
+    }
+    body:not(.conversation-started) .hero h1{
+      margin:0;color:#fff;font-size:clamp(32px,3.35vw,52px);line-height:1.10;letter-spacing:.0018em;
+      font-weight:410;font-variation-settings:"opsz" 32;text-shadow:0 2px 22px rgba(0,0,0,.30);max-width:none
+    }
+    body:not(.conversation-started) .hero p{display:none}
+    body:not(.conversation-started) .hero-grid{display:none}
+    body:not(.conversation-started) .composer-wrap{
+      position:absolute;z-index:12;left:50%;top:50%;transform:translate(-50%,-12%);
+      width:min(708px,calc(100% - 46px));padding:0;background:transparent
+    }
+    .composer{
+      position:relative;width:100%;height:143px;padding:0;border:0;border-radius:26px;
+      background:var(--jane-card);backdrop-filter:blur(26px) saturate(112%);
+      -webkit-backdrop-filter:blur(26px) saturate(112%);
+      box-shadow:inset 0 0 0 1px rgba(214,228,255,.14),0 22px 60px rgba(0,0,0,.30)
+    }
+    .composer textarea{
+      position:absolute;left:27px;top:27px;right:24px;width:calc(100% - 51px);
+      min-height:32px;max-height:54px;height:40px;padding:0;border:0;resize:none;overflow:auto;
+      color:#f4f4f5;background:transparent;font-size:clamp(12px,1vw,14px);font-weight:400;
+      line-height:1.35;letter-spacing:.007em
+    }
+    .composer textarea::placeholder{color:#8b8c8e;opacity:1}
+    .composer-bottom{position:absolute;left:19px;right:-1px;top:92px;height:30px;display:block}
+    .tools{height:30px;display:flex;align-items:center;gap:5.5px}
+    .tool{
+      width:auto;height:30px;padding:0 12px;border-radius:9px;border:1px solid rgba(255,255,255,.05);
+      background:linear-gradient(180deg,rgba(255,255,255,.088),rgba(255,255,255,.050) 45%,rgba(255,255,255,.038));
+      color:#909093;font-size:clamp(9px,.75vw,11px);font-weight:500;line-height:1;white-space:nowrap
+    }
+    .tool:hover{background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.07));color:#c8c8cb}
+    .jane-quick-tool{min-width:107px}
+    .privacy-toggle{display:flex;align-items:center;gap:6px;min-width:108px;justify-content:center}
+    .privacy-toggle input{width:12px;height:12px;margin:0;accent-color:var(--jane-orange)}
+    .composer-right{position:absolute;inset:0;pointer-events:none}
+    .composer-right>*{position:absolute;pointer-events:auto}
+    .composer-model{
+      right:135px;top:15.5px;display:inline-flex;align-items:center;gap:6.2px;
+      color:#98999c;font-size:10.4px;font-weight:400;line-height:1;letter-spacing:normal;white-space:nowrap
+    }
+    .composer-model svg{width:6.8px;height:auto}
+    .attach-control{
+      right:74px;top:10.14px;width:19.79px;height:20px;padding:0;border:0;background:transparent;color:#a9aaad
+    }
+    .attach-control:before{
+      content:"";display:block;width:19.79px;height:19.79px;background:currentColor;
+      -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' d='m20.5 11.5-8.9 8.9a6 6 0 0 1-8.5-8.5l9.6-9.6a4 4 0 0 1 5.7 5.7l-9.6 9.6a2 2 0 0 1-2.8-2.8l8.9-8.9'/%3E%3C/svg%3E") center/contain no-repeat;
+      mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' d='m20.5 11.5-8.9 8.9a6 6 0 0 1-8.5-8.5l9.6-9.6a4 4 0 0 1 5.7 5.7l-9.6 9.6a2 2 0 0 1-2.8-2.8l8.9-8.9'/%3E%3C/svg%3E") center/contain no-repeat
+    }
+    .attach-control:hover{color:#fff}
+    #fileInput{display:none}
+    .send{
+      right:14px;top:2px;width:35px;height:35px;min-width:35px;border-radius:50%;padding:0;
+      background:linear-gradient(163deg,#fbbc94 0%,#f49d70 46%,#e88654 100%);color:#fff;font-size:0;
+      box-shadow:0 3px 12px rgba(210,110,60,.34);display:grid;place-items:center
+    }
+    .send:before{
+      content:"";width:11.66px;height:11.66px;background:#fff;
+      -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 14V2M3.5 6.5 8 2l4.5 4.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+      mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 14V2M3.5 6.5 8 2l4.5 4.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat
+    }
+    .send:hover{filter:brightness(1.07)}.send:active{transform:scale(.95)}.send:disabled{opacity:.45}
+    body:not(.conversation-started) .disclaimer{
+      margin-top:14px;color:rgba(255,255,255,.58);font-size:10px;text-shadow:0 1px 10px rgba(0,0,0,.35)
+    }
+    .jane-proof{
+      position:absolute;z-index:10;left:50%;bottom:clamp(28px,7vh,70px);transform:translateX(-50%);
+      display:flex;flex-direction:column;align-items:center;gap:18px;color:rgba(255,255,255,.95);
+      font-size:clamp(11px,1vw,14px);font-weight:480;letter-spacing:.0065em;text-shadow:0 1px 12px rgba(0,0,0,.35)
+    }
+    .jane-proof div{display:flex;gap:clamp(28px,4vw,62px)}
+    .jane-proof b{font-size:clamp(11px,1vw,14px);font-weight:500;letter-spacing:.08em}
+    body.conversation-started .jane-proof{display:none}
+    body.conversation-started .chat{
+      padding:36px max(24px,calc((100% - 820px)/2));background:rgba(8,10,14,.62);
+      backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)
+    }
+    body.conversation-started .topbar{background:rgba(8,10,14,.42);backdrop-filter:blur(12px)}
+    body.conversation-started .composer-wrap{
+      position:relative;left:auto;top:auto;transform:none;width:auto;padding:12px max(18px,calc((100% - 740px)/2)) 20px;
+      background:linear-gradient(180deg,rgba(8,10,14,0),rgba(8,10,14,.72) 24%)
+    }
+    body.conversation-started .composer{height:132px}
+    body.conversation-started .composer-bottom{top:82px}
+    .message{color:#fff}.bubble{color:#f3f4f6;text-shadow:0 1px 8px rgba(0,0,0,.2)}
+    .message .avatar{background:rgba(30,31,35,.88);border-color:rgba(255,255,255,.10)}
+    .message.assistant .avatar{background:var(--jane-orange);color:#17120f;border-color:transparent}
+    .chip.good{color:#ffc6a5;border-color:rgba(244,157,112,.28)}
+    .scroll-latest{background:rgba(29,29,32,.9);border-color:rgba(255,255,255,.12)}
+    :focus-visible{outline:2px solid #f8b285;outline-offset:3px;border-radius:4px}
+    @media(min-width:600px) and (max-width:1180px) and (min-height:600px){
+      :root{--jane-u:1px}
+      .jane-shell-nav{padding:clamp(20px,3vh,32px) clamp(28px,4.2vw,60px)}
+      .jane-shell-right{gap:4px}.jane-nav-link,.jane-nav-btn{font-size:13px;padding:7px 8px}
+      body:not(.conversation-started) .hero{padding-bottom:210px}
+      body:not(.conversation-started) .hero h1{font-size:clamp(27px,4.3vw,44px)}
+      body:not(.conversation-started) .composer-wrap{width:min(100%,clamp(516px,74vw,760px))}
+      .composer{height:auto;min-height:143px;padding:15px 18px 16px}
+      .composer textarea{position:static;width:100%;height:auto;min-height:42px;padding:0;font-size:clamp(11px,1.35vw,14px);line-height:1.4}
+      .composer-bottom{position:static;height:auto;margin-top:30px;display:flex;align-items:center;gap:clamp(10px,1.4vw,18px)}
+      .tools{height:auto;gap:clamp(6px,.85vw,10px);flex-wrap:nowrap}
+      .tool{height:clamp(29px,3.4vh,34px);padding:0 clamp(7px,1vw,13px);font-size:clamp(9.6px,1.12vw,12.5px);min-width:0}
+      .composer-right{position:static;display:flex;align-items:center;margin-left:auto;gap:0;pointer-events:auto}
+      .composer-right>*{position:static}
+      .composer-model{font-size:clamp(9.8px,1.12vw,12.5px)}
+      .attach-control{margin-left:clamp(9px,1.4vw,20px)}
+      .send{margin-left:clamp(9px,1.3vw,18px);width:clamp(32px,3.5vw,38px);height:clamp(32px,3.5vw,38px);min-width:0}
+      body.conversation-started .composer{height:auto}
+      body.conversation-started .composer-wrap{padding-inline:clamp(18px,4vw,48px)}
+    }
+    @media(max-width:599px),(max-height:599px) and (max-width:1180px){
+      :root{--jane-u:1px}
+      .jane-shell-nav{
+        height:68px;padding:max(14px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) 8px max(18px,env(safe-area-inset-left))
+      }
+      .jane-shell-left .secondary,.jane-shell-right #routeDetails,.jane-shell-right #cleanSettingsButton{display:none}
+      .jane-shell-right{gap:5px}.jane-nav-btn{font-size:12px;padding:7px 8px}
+      .app{height:calc(100dvh - 68px)}
+      .topbar{min-height:42px;padding:0 10px;overflow-x:auto;justify-content:flex-start}
+      .modes{gap:14px}.mode{font-size:12px;white-space:nowrap}
+      body:not(.conversation-started) .hero{padding:0 18px 190px}
+      body:not(.conversation-started) .hero h1{width:100%;max-width:15ch;font-size:clamp(29px,7.6vw,50px);line-height:1.14;letter-spacing:-.012em}
+      body:not(.conversation-started) .composer-wrap{width:calc(100% - 36px);top:51%}
+      .composer{height:auto;min-height:176px;padding:13px 14px;border-radius:20px}
+      .composer textarea{position:static;width:100%;height:auto;min-height:42px;padding:0;font-size:clamp(9.4px,2.95vw,14px);white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+      .composer-bottom{position:static;height:auto;margin-top:22px;display:flex;flex-direction:column;align-items:stretch;gap:12px}
+      .tools{height:auto;display:flex;flex-wrap:wrap;gap:7px}
+      .tool{height:31px;min-width:0;padding:0 9px;font-size:10px}
+      .composer-right{position:static;display:flex;align-items:center;justify-content:flex-start;height:40px;pointer-events:auto}
+      .composer-right>*{position:static}
+      .composer-model{font-size:11px}
+      .attach-control{margin-left:auto}
+      .send{margin-left:14px;width:40px;height:40px;min-width:40px}
+      .jane-proof{bottom:max(18px,env(safe-area-inset-bottom));gap:10px}
+      .jane-proof div{gap:18px}.jane-proof b{font-size:9px}
+      body.conversation-started .composer-wrap{padding:10px 12px 14px}
+      body.conversation-started .composer{min-height:168px;height:auto}
+      .sidebar{top:68px}
+    }
+    @media(max-width:1180px) and (max-height:560px){
+      body:not(.conversation-started) .hero{padding-bottom:150px}
+      body:not(.conversation-started) .hero h1{font-size:clamp(24px,5.4vh,34px)}
+      .jane-proof{gap:10px;bottom:12px}
+      body:not(.conversation-started) .composer-wrap{top:50%}
+    }
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
   </style>
 </head>
 <body>
-<nav class="jane-shell-nav" aria-label="Jane">
+<div class="jane-stage-bg" aria-hidden="true">
+  <video class="jane-stage-video" autoplay muted loop playsinline>
+    <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260826_124724_bc041163-d651-425f-aea3-2acc1efc2c96.mp4" type="video/mp4" />
+  </video>
+</div>
+<nav class="jane-shell-nav" aria-label="Jane AI">
   <div class="jane-shell-left">
     <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Toggle conversation history" title="Conversation history">☰</button>
-    <a class="jane-shell-brand" href="/"><i></i><span>Jane</span></a>
+    <a class="jane-shell-brand" href="/jane" aria-label="Jane AI"><img class="jane-brand-logo" src="/assets/logo.webp" alt="" width="52" height="52" /><span>Jane</span></a>
     <a class="jane-nav-link secondary" href="/">Home</a>
-    <a class="jane-nav-link secondary" href="/clearing">3maryjane Clearing House</a>
   </div>
   <div class="jane-shell-right">
     <button class="jane-nav-btn" id="routeDetails">Route details</button>
@@ -289,13 +518,13 @@
 
     <section class="chat" id="chat">
       <div class="hero" id="hero">
-        <h1>Ask Jane <span>anything.</span></h1>
-        <p>One private interface to the world's best AI models. Jane automatically chooses the right intelligence for quality, price, speed and privacy.</p>
-        <div class="hero-grid">
-          <button class="hero-card" data-tool-target="researchButton"><strong>◎ Research the web</strong><small>Deep Research</small></button>
-          <button class="hero-card" data-tool-target="studioButton"><strong>✦ Create an image</strong><small>Creator Studio</small></button>
-          <button class="hero-card" data-prompt="Analyze the file I attach and give me the important points."><strong>＋ Analyze a file</strong><small>Documents</small></button>
-          <button class="hero-card" data-prompt="Surprise me with something useful I can learn in five minutes."><strong>✧ Surprise me</strong><small>Auto</small></button>
+        <h1>Ask Jane anything.</h1>
+        <p>One private interface to the world's best AI models.</p>
+        <div class="hero-grid" aria-label="Jane AI quick actions">
+          <button class="hero-card" data-tool-target="researchButton"><strong>Research</strong><small>Deep Research</small></button>
+          <button class="hero-card" data-tool-target="studioButton"><strong>Create</strong><small>Creator Studio</small></button>
+          <button class="hero-card" data-prompt="Analyze the file I attach and give me the important points."><strong>Analyze</strong><small>Documents</small></button>
+          <button class="hero-card" data-prompt="Surprise me with something useful I can learn in five minutes."><strong>Surprise me</strong><small>Auto</small></button>
         </div>
       </div>
       <div id="messages"></div>
@@ -308,15 +537,23 @@
         <textarea id="prompt" placeholder="Ask anything. Jane will choose the intelligence..." rows="2"></textarea>
         <div class="composer-bottom">
           <div class="tools">
-            <button class="tool" id="attach">＋ File</button>
-            <input id="fileInput" type="file" accept=".txt,.md,.json,.csv,.html,.css,.js,.ts,.py,.xml,.yaml,.yml,.pdf,.docx,image/*" />
-            <label class="tool privacy-toggle"><input id="privacyToggle" type="checkbox" checked /> local privacy</label>
-            <label class="tool privacy-toggle"><input id="vaultToggle" type="checkbox" /> use Vault</label>
+            <button class="tool jane-quick-tool" id="researchQuick" type="button"><span>Deep Research</span></button>
+            <label class="tool privacy-toggle"><input id="privacyToggle" type="checkbox" checked /><span>Local Privacy</span></label>
+            <label class="tool privacy-toggle"><input id="vaultToggle" type="checkbox" /><span>Use Vault</span></label>
           </div>
-          <button class="send" id="send">Send</button>
+          <div class="composer-right" aria-label="Composer controls">
+            <div class="composer-model" aria-label="Current Jane mode"><span id="composerModel">Auto</span><svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.25 6 6.25 11 1.25" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <button class="attach-control" id="attach" type="button" aria-label="Attach file" title="Attach file"></button>
+            <input id="fileInput" type="file" accept=".txt,.md,.json,.csv,.html,.css,.js,.ts,.py,.xml,.yaml,.yml,.pdf,.docx,image/*" />
+            <button class="send" id="send" type="button" aria-label="Send prompt">Send</button>
+          </div>
         </div>
       </div>
-      <div class="disclaimer">Prompts are processed offchain. Local history is not uploaded by Jane.</div>
+      <div class="disclaimer">Prompts are processed offchain. Local privacy runs before inference.</div>
+    </div>
+    <div class="jane-proof" aria-hidden="true">
+      <span>Private multi-model intelligence</span>
+      <div><b>QUALITY</b><b>PRICE</b><b>SPEED</b><b>PRIVACY</b></div>
     </div>
   </main>
 
@@ -1298,7 +1535,7 @@
       messagesEl.innerHTML="";hero.style.display="none";document.body.classList.add("conversation-started");
       state.messages.forEach(function(m){addMessage(m.role,m.content);});
       document.querySelectorAll(".mode").forEach(function(b){b.classList.toggle("active",b.dataset.mode===state.mode);});
-      renderHistory();
+      syncComposerMode();renderHistory();
     }catch(_){}
   }
 
@@ -1358,14 +1595,14 @@
     messagesEl.innerHTML="";hero.style.display="none";
     state.messages.forEach(function(m){addMessage(m.role,rehydrate(m.content,{}));});
     document.querySelectorAll(".mode").forEach(function(b){b.classList.toggle("active",b.dataset.mode===state.mode);});
-    document.body.classList.add("conversation-started");
+    syncComposerMode();document.body.classList.add("conversation-started");
     renderHistory();
   }
 
   function reset(){
     document.body.classList.remove("conversation-started");
     state.messages=[];state.currentId=crypto.randomUUID?crypto.randomUUID():String(Date.now());state.privacyMap={};state.serverConversationId=null;
-    state.characterId=null;state.characterName=null;promptEl.placeholder="Ask anything. Jane will choose the intelligence...";
+    state.characterId=null;state.characterName=null;state.mode="auto";syncComposerMode();promptEl.placeholder="Ask anything. Jane will choose the intelligence...";
     messagesEl.innerHTML="";hero.style.display="block";promptEl.value="";setPrivacy({count:0,categories:[]});
     el("routeModel").textContent="Waiting for a task";el("routeReason").textContent="Auto balances quality, cost, speed and privacy.";
     el("routeCost").textContent="—";el("routeSavings").textContent="—";el("routeQuality").textContent="—";el("qualityBar").style.width="0";
@@ -1376,9 +1613,12 @@
     el("edgeTask").textContent="—";el("edgeCache").textContent="—";el("edgeNotes").textContent="Local-first planning appears after a request.";
   }
 
+  function syncComposerMode(){var m=el("composerModel");if(m)m.textContent=state.mode.charAt(0).toUpperCase()+state.mode.slice(1);}
+  syncComposerMode();
+
   document.querySelectorAll(".mode").forEach(function(b){
     b.onclick=function(){
-      state.mode=b.dataset.mode;
+      state.mode=b.dataset.mode;syncComposerMode();
       document.querySelectorAll(".mode").forEach(function(x){x.classList.toggle("active",x===b);});
       if(state.mode==="private"||state.mode==="confidential") el("privacyToggle").checked=true;
     };
@@ -1396,6 +1636,7 @@
   promptEl.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submit();}});
   promptEl.addEventListener("input",function(){this.style.height="auto";this.style.height=Math.min(this.scrollHeight,180)+"px";});
   el("newChat").onclick=function(){reset();renderHistory();closeSidebarOnMobile();};
+  if(el("researchQuick"))el("researchQuick").onclick=function(){el("researchButton").click();};
   el("attach").onclick=function(){el("fileInput").click();};
   el("fileInput").onchange=async function(){
     var file=this.files&&this.files[0]; if(!file)return;
@@ -1405,10 +1646,10 @@
       if(file.type&&file.type.indexOf("image/")===0){
         var imageBytes=new Uint8Array(await file.arrayBuffer());
         state.attachedImage={type:"image_base64",data:bytesToB64(imageBytes),mediaType:file.type,detail:"auto"};
-        if(state.mode==="auto")state.mode="vision";
+        if(state.mode==="auto")state.mode="vision";syncComposerMode();
         document.querySelectorAll(".mode").forEach(function(b){b.classList.toggle("active",b.dataset.mode===state.mode);});
       }else if(file.type==="application/pdf"||/\.pdf$/i.test(file.name)||/\.docx$/i.test(file.name)){
-        el("attach").textContent="Extracting…";
+        el("attach").setAttribute("title","Extracting…");
         var bytes=new Uint8Array(await file.arrayBuffer());
         var response=await fetch("/api/documents/extract",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
           filename:file.name,mimeType:file.type||"application/octet-stream",dataBase64:bytesToB64(bytes),maxChars:250000
@@ -1419,10 +1660,10 @@
       }else{
         state.attachedText=await file.text();
       }
-      el("attach").textContent="✓ "+file.name.slice(0,18);
+      el("attach").setAttribute("title",file.name);
     }catch(error){
       state.attachedText="";state.attachedImage=null;state.attachedFileName="";
-      el("attach").textContent="＋ File";
+      el("attach").setAttribute("title","Attach file");
       alert(error.message||"Could not read attachment");
     }finally{this.value="";}
   };
