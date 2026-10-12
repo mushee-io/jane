@@ -1241,7 +1241,11 @@
       state.messages=(data.item.messages||[]).map(function(m){return {role:m.role,content:m.content};});
       messagesEl.innerHTML="";hero.style.display="none";document.body.classList.add("conversation-started");
       state.messages.forEach(function(m){addMessage(m.role,m.content);});
-      function showAccount(accountData){
+      document.querySelectorAll(".mode").forEach(function(b){b.classList.toggle("active",b.dataset.mode===state.mode);});
+    }catch(_){}
+  }
+
+  function showAccount(accountData){
     state.account=accountData||null;
     el("accountSignedOut").style.display=state.account?"none":"block";
     el("accountSignedIn").style.display=state.account?"block":"none";
@@ -1291,10 +1295,6 @@
     state.serverConversationId=null;showAccount(null);el("accountStatus").textContent="Signed out.";
   };
   refreshAccount();
-
-  document.querySelectorAll(".mode").forEach(function(b){b.classList.toggle("active",b.dataset.mode===state.mode);});
-    }catch(_){}
-  }
 
   function loadChat(item){
     state.currentId=item.id;state.messages=item.messages||[];state.mode=item.mode||"auto";
