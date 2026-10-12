@@ -35,8 +35,8 @@
 - configurable massive text + multimodal model catalog
 - Image Studio
 - Video Studio with native fal.ai Wan 2.7 text-to-video and image-to-video
-- Audio/Music Studio
-- TTS/STT/speech-to-speech + realtime WebRTC voice client
+- Audio/Music Studio with native fal.ai Stable Audio 2.5 + ElevenLabs SFX
+- TTS/STT + push-to-talk Jane Voice Beta using fal.ai; realtime WebRTC foundation remains available for a future dedicated realtime provider
 - privacy-aware Deep Research with native Tavily Search + Extract adapter
 - Characters + character chat
 - Jane Arena
@@ -66,7 +66,7 @@ Code-complete does not mean externally live.
 The following require credentials, provider infrastructure, funded wallets, or hosting access:
 
 1. Real inference provider API keys.
-2. Image/video/audio/voice provider endpoints and keys.
+2. Optional dedicated realtime voice provider endpoint/key. Image, video, audio, TTS and STT use the existing `FAL_KEY` natively.
 3. Search provider credential (Tavily is supported natively with `TAVILY_API_KEY`; generic endpoints remain supported).
 4. A genuine TEE attestation/verifier service and enclave.
 5. Jane-owned GPU inference endpoint.

@@ -14,6 +14,12 @@ test("FAL_KEY enables native Jane image routes", () => {
     assert.equal(ids.has("fal-flux-dev-edit"), true);
     assert.equal(ids.has("fal-wan-27-text-video"), true);
     assert.equal(ids.has("fal-wan-27-image-video"), true);
+    assert.equal(ids.has("fal-stable-audio-25"), true);
+    assert.equal(ids.has("fal-elevenlabs-sfx"), true);
+    assert.equal(ids.has("fal-audio-transcription"), true);
+    assert.equal(ids.has("fal-kokoro-british"), true);
+    assert.equal(ids.has("fal-speech-to-text"), true);
+    assert.equal(ids.has("jane-voice-beta"), true);
 
     const textRoute = media.choose({
       modality: "image",
@@ -45,6 +51,41 @@ test("FAL_KEY enables native Jane image routes", () => {
       inputUrl: "https://example.com/frame.jpg"
     });
     assert.equal(imageVideo.selected?.model.endpoint, "fal-ai/wan/v2.7/image-to-video");
+
+    const music = media.choose({
+      modality: "audio",
+      operation: "music",
+      prompt: "Ambient electronic score"
+    });
+    assert.equal(music.selected?.model.endpoint, "fal-ai/stable-audio-25/text-to-audio");
+
+    const sfx = media.choose({
+      modality: "audio",
+      operation: "sfx",
+      prompt: "Rain on glass"
+    });
+    assert.equal(sfx.selected?.model.endpoint, "fal-ai/elevenlabs/sound-effects/v2");
+
+    const transcription = media.choose({
+      modality: "audio",
+      operation: "transcription",
+      inputUrl: "https://example.com/audio.mp3"
+    });
+    assert.equal(transcription.selected?.model.endpoint, "fal-ai/speech-to-text");
+
+    const tts = media.choose({
+      modality: "speech",
+      operation: "tts",
+      prompt: "Hello from Jane"
+    });
+    assert.equal(tts.selected?.model.endpoint, "fal-ai/kokoro/british-english");
+
+    const voice = media.choose({
+      modality: "speech",
+      operation: "speech-to-speech",
+      inputBase64: "data:audio/webm;base64,AAAA"
+    });
+    assert.equal(voice.selected?.model.id, "jane-voice-beta");
   } finally {
     if (original === undefined) delete process.env.FAL_KEY;
     else process.env.FAL_KEY = original;

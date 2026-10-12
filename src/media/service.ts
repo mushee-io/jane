@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { fal } from "@fal-ai/client";
+import { JaneAIService } from "../ai/service.js";
 import type { JaneModality } from "../catalog/unified.js";
 
 export interface MediaModel {
@@ -90,6 +91,90 @@ function nativeFalModels(): MediaModel[] {
       privacyScore: 0.60,
       zeroRetention: false,
       configured: true
+    },
+    {
+      id: "fal-stable-audio-25",
+      provider: "fal",
+      label: "Stable Audio 2.5",
+      modality: "audio",
+      operations: ["music"],
+      endpoint: process.env.FAL_MUSIC_MODEL ?? "fal-ai/stable-audio-25/text-to-audio",
+      apiKeyEnv: "FAL_KEY",
+      qualityScore: 0.91,
+      latencyScore: 0.62,
+      privacyScore: 0.60,
+      zeroRetention: false,
+      configured: true
+    },
+    {
+      id: "fal-elevenlabs-sfx",
+      provider: "fal",
+      label: "ElevenLabs Sound Effects V2",
+      modality: "audio",
+      operations: ["sfx"],
+      endpoint: process.env.FAL_SFX_MODEL ?? "fal-ai/elevenlabs/sound-effects/v2",
+      apiKeyEnv: "FAL_KEY",
+      qualityScore: 0.93,
+      latencyScore: 0.84,
+      privacyScore: 0.60,
+      zeroRetention: false,
+      configured: true
+    },
+    {
+      id: "fal-audio-transcription",
+      provider: "fal",
+      label: "fal Speech to Text",
+      modality: "audio",
+      operations: ["transcription"],
+      endpoint: process.env.FAL_STT_MODEL ?? "fal-ai/speech-to-text",
+      apiKeyEnv: "FAL_KEY",
+      qualityScore: 0.90,
+      latencyScore: 0.94,
+      privacyScore: 0.60,
+      zeroRetention: false,
+      configured: true
+    },
+    {
+      id: "fal-kokoro-british",
+      provider: "fal",
+      label: "Kokoro British English",
+      modality: "speech",
+      operations: ["tts"],
+      endpoint: process.env.FAL_TTS_MODEL ?? "fal-ai/kokoro/british-english",
+      apiKeyEnv: "FAL_KEY",
+      qualityScore: 0.88,
+      latencyScore: 0.96,
+      privacyScore: 0.60,
+      zeroRetention: false,
+      configured: true
+    },
+    {
+      id: "fal-speech-to-text",
+      provider: "fal",
+      label: "fal Speech to Text",
+      modality: "speech",
+      operations: ["stt"],
+      endpoint: process.env.FAL_STT_MODEL ?? "fal-ai/speech-to-text",
+      apiKeyEnv: "FAL_KEY",
+      qualityScore: 0.90,
+      latencyScore: 0.94,
+      privacyScore: 0.60,
+      zeroRetention: false,
+      configured: true
+    },
+    {
+      id: "jane-voice-beta",
+      provider: "jane-voice",
+      label: "Jane Voice Beta",
+      modality: "speech",
+      operations: ["speech-to-speech"],
+      endpoint: "jane://voice-beta",
+      apiKeyEnv: "FAL_KEY",
+      qualityScore: 0.92,
+      latencyScore: 0.82,
+      privacyScore: 0.60,
+      zeroRetention: false,
+      configured: true
     }
   ];
 }
@@ -118,6 +203,23 @@ function score(model: MediaModel, request: MediaRequest): number {
   return model.qualityScore*qualityWeight + model.latencyScore*latencyWeight + model.privacyScore*privacyWeight + costScore*costWeight;
 }
 
+function routeMetadata(route: ReturnType<JaneMediaService["choose"]>) {
+  if (!route.selected) return {};
+  return {
+    estimatedCostUsd: route.selected.model.pricePerGeneration ?? null,
+    routeScore: Number(route.selected.score.toFixed(4)),
+    alternatives: route.alternatives.map((item) => ({
+      id:item.model.id,
+      provider:item.model.provider,
+      estimatedCostUsd:item.model.pricePerGeneration ?? null
+    }))
+  };
+}
+
+function audioSource(request: MediaRequest) {
+  return request.inputUrl ?? request.inputBase64;
+}
+
 export class JaneMediaService {
   list() {
     return models().map(({ apiKeyEnv, endpoint, ...model }) => ({
@@ -138,12 +240,66 @@ export class JaneMediaService {
     return { selected: candidates[0] ?? null, alternatives: candidates.slice(1,4) };
   }
 
+  private async voiceBeta(request: MediaRequest, route: ReturnType<JaneMediaService["choose"]>) {
+    if (request.privacy && request.privacy !== "standard") {
+      throw new Error("VOICE_BETA_PRIVATE_ROUTE_NOT_CONFIGURED");
+    }
+    if (!process.env.FAL_KEY) throw new Error("MEDIA_PROVIDER_API_KEY_NOT_CONFIGURED");
+    const source = audioSource(request);
+    if (!source) throw new Error("AUDIO_INPUT_REQUIRED");
+
+    fal.config({ credentials: process.env.FAL_KEY });
+    const stt = await fal.subscribe(process.env.FAL_STT_MODEL ?? "fal-ai/speech-to-text", {
+      input: { audio_url: source, use_pnc: true }
+    });
+    const sttData = (stt.data ?? {}) as Record<string, unknown>;
+    const transcript = String(sttData.output ?? "").trim();
+    if (!transcript) throw new Error("VOICE_TRANSCRIPTION_EMPTY");
+
+    const jane = new JaneAIService();
+    const answer = await jane.chat({
+      mode: "auto",
+      messages: [{ role: "user", content: transcript }],
+      generation: { maxOutputTokens: 700 }
+    });
+
+    const tts = await fal.subscribe(process.env.FAL_TTS_MODEL ?? "fal-ai/kokoro/british-english", {
+      input: {
+        prompt: answer.answer,
+        voice: request.voice ?? process.env.FAL_TTS_VOICE ?? "bm_george",
+        speed: 1,
+        enable_safety_checker: true
+      }
+    });
+
+    return {
+      id:`media_${randomUUID().replace(/-/g,"")}`,
+      modality:request.modality,
+      operation:request.operation,
+      provider:"jane-voice",
+      model:"jane-voice-beta",
+      ...routeMetadata(route),
+      requestId:tts.requestId,
+      output:{
+        transcript,
+        answer:answer.answer,
+        audio:(tts.data as Record<string, unknown>)?.audio ?? null,
+        aiModel:answer.model,
+        route:answer.route
+      }
+    };
+  }
+
   async generate(request: MediaRequest) {
     const route = this.choose(request);
     if (!route.selected) throw new Error("NO_MEDIA_ROUTE_AVAILABLE");
     const model = route.selected.model;
     const apiKey = model.apiKeyEnv ? process.env[model.apiKeyEnv] : undefined;
     if (model.apiKeyEnv && !apiKey) throw new Error("MEDIA_PROVIDER_API_KEY_NOT_CONFIGURED");
+
+    if (model.provider === "jane-voice") {
+      return this.voiceBeta(request, route);
+    }
 
     if (model.provider === "fal") {
       if (!process.env.FAL_KEY) throw new Error("MEDIA_PROVIDER_API_KEY_NOT_CONFIGURED");
@@ -176,15 +332,95 @@ export class JaneMediaService {
           model:model.id,
           status:"queued",
           requestId:queued.request_id,
-          estimatedCostUsd:model.pricePerGeneration ?? null,
-          routeScore:Number(route.selected.score.toFixed(4)),
-          alternatives:route.alternatives.map((item) => ({
-            id:item.model.id,
-            provider:item.model.provider,
-            estimatedCostUsd:item.model.pricePerGeneration ?? null
-          })),
+          ...routeMetadata(route),
           output:null
         };
+      }
+
+      if (request.modality === "audio") {
+        if (request.operation === "transcription") {
+          const source = audioSource(request);
+          if (!source) throw new Error("AUDIO_INPUT_REQUIRED");
+          const result = await fal.subscribe(model.endpoint, { input: { audio_url: source, use_pnc: true } });
+          return {
+            id:`media_${randomUUID().replace(/-/g,"")}`,
+            modality:request.modality,
+            operation:request.operation,
+            provider:model.provider,
+            model:model.id,
+            ...routeMetadata(route),
+            requestId:result.requestId,
+            output:(result.data ?? {}) as Record<string, unknown>
+          };
+        }
+
+        if (!request.prompt?.trim()) throw new Error("AUDIO_PROMPT_REQUIRED");
+        const input: Record<string, unknown> = request.operation === "sfx"
+          ? {
+              text:request.prompt,
+              duration_seconds:Math.min(22, Math.max(0.5, request.durationSeconds ?? 6)),
+              prompt_influence:0.3,
+              output_format:"mp3_44100_128"
+            }
+          : {
+              prompt:request.prompt,
+              seconds_total:Math.min(190, Math.max(5, request.durationSeconds ?? 20)),
+              num_inference_steps:8,
+              guidance_scale:1,
+              enable_safety_checker:true
+            };
+        const queued = await fal.queue.submit(model.endpoint, { input });
+        return {
+          id:`media_${randomUUID().replace(/-/g,"")}`,
+          modality:request.modality,
+          operation:request.operation,
+          provider:model.provider,
+          model:model.id,
+          status:"queued",
+          requestId:queued.request_id,
+          ...routeMetadata(route),
+          output:null
+        };
+      }
+
+      if (request.modality === "speech") {
+        if (request.operation === "stt") {
+          const source = audioSource(request);
+          if (!source) throw new Error("AUDIO_INPUT_REQUIRED");
+          const result = await fal.subscribe(model.endpoint, { input: { audio_url: source, use_pnc: true } });
+          return {
+            id:`media_${randomUUID().replace(/-/g,"")}`,
+            modality:request.modality,
+            operation:request.operation,
+            provider:model.provider,
+            model:model.id,
+            ...routeMetadata(route),
+            requestId:result.requestId,
+            output:(result.data ?? {}) as Record<string, unknown>
+          };
+        }
+
+        if (request.operation === "tts") {
+          if (!request.prompt?.trim()) throw new Error("TTS_TEXT_REQUIRED");
+          const result = await fal.subscribe(model.endpoint, {
+            input: {
+              prompt:request.prompt,
+              voice:request.voice ?? process.env.FAL_TTS_VOICE ?? "bm_george",
+              speed:1,
+              enable_safety_checker:true
+            }
+          });
+          return {
+            id:`media_${randomUUID().replace(/-/g,"")}`,
+            modality:request.modality,
+            operation:request.operation,
+            provider:model.provider,
+            model:model.id,
+            ...routeMetadata(route),
+            requestId:result.requestId,
+            output:(result.data ?? {}) as Record<string, unknown>
+          };
+        }
       }
 
       const baseInput: Record<string, unknown> = {
@@ -202,24 +438,15 @@ export class JaneMediaService {
         baseInput.image_url = imageUrl;
       }
 
-      const result = await fal.subscribe(model.endpoint, {
-        input: baseInput
-      });
+      const result = await fal.subscribe(model.endpoint, { input: baseInput });
       const body = (result.data ?? {}) as Record<string, unknown>;
-
       return {
         id:`media_${randomUUID().replace(/-/g,"")}`,
         modality:request.modality,
         operation:request.operation,
         provider:model.provider,
         model:model.id,
-        estimatedCostUsd:model.pricePerGeneration ?? null,
-        routeScore:Number(route.selected.score.toFixed(4)),
-        alternatives:route.alternatives.map((item) => ({
-          id:item.model.id,
-          provider:item.model.provider,
-          estimatedCostUsd:item.model.pricePerGeneration ?? null
-        })),
+        ...routeMetadata(route),
         requestId: result.requestId,
         output: body
       };
@@ -256,13 +483,7 @@ export class JaneMediaService {
         operation:request.operation,
         provider:model.provider,
         model:model.id,
-        estimatedCostUsd:model.pricePerGeneration ?? null,
-        routeScore:Number(route.selected.score.toFixed(4)),
-        alternatives:route.alternatives.map((item) => ({
-          id:item.model.id,
-          provider:item.model.provider,
-          estimatedCostUsd:item.model.pricePerGeneration ?? null
-        })),
+        ...routeMetadata(route),
         output:body
       };
     } finally {
