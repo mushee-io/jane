@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowRight, Menu, X } from "lucide-react";
 import {
   createPublicClient,
   createWalletClient,
@@ -180,6 +181,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("Connect a wallet, then load or create a deployed 3maryjane account.");
   const [activeProduct, setActiveProduct] = useState<"clearing" | "hashed">("clearing");
+  const [showTerminal, setShowTerminal] = useState(() => window.location.hash === "#terminal");
 
   const account = isAddress(accountInput) ? (getAddress(accountInput) as Address) : null;
   const coreConfigured = Boolean(deployment.accountFactory && deployment.adapterRegistry);
@@ -341,13 +343,40 @@ export default function App() {
     ["HASHED", hashedDeployment.vault, deployment.adapters?.Hashed],
   ] as const;
 
+  if (!showTerminal) {
+    return (
+      <ClearingLanding
+        onEnter={() => {
+          setActiveProduct("clearing");
+          setShowTerminal(true);
+          history.replaceState(null, "", "#terminal");
+          requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }));
+        }}
+        onHashed={() => {
+          setActiveProduct("hashed");
+          setShowTerminal(true);
+          history.replaceState(null, "", "#terminal");
+          requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }));
+        }}
+      />
+    );
+  }
+
   return (
     <div className="shell">
       <header className="topbar">
-        <div className="brand-lockup">
+        <button
+          className="brand-lockup terminal-brand-button"
+          type="button"
+          onClick={() => {
+            setShowTerminal(false);
+            history.replaceState(null, "", "/clearing");
+            window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+          }}
+        >
           <div className="eyebrow">MONAD / CAPITAL + CLEARING</div>
           <h1>3maryjane</h1>
-        </div>
+        </button>
         <nav className="product-nav" aria-label="Product">
           <button
             className={activeProduct === "clearing" ? "active" : ""}
@@ -1286,6 +1315,223 @@ function HashedPage({
           cross-protocol exposure. The first market is testnet equity-backed credit; the architecture
           can later extend to verified real-world-asset collateral without changing the clearing model.
         </p>
+      </section>
+    </div>
+  );
+}
+
+
+const SPOTLIGHT_R = 260;
+const BG_IMAGE_1 = "https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260609_195923_b0ba8ace-1d1d-4f2c-9a28-1ab84b330680.png&w=1280&q=85";
+const BG_IMAGE_2 = "https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260609_201152_bba90a12-bf12-459f-91f0-51f237dbaf3b.png&w=1280&q=85";
+
+function RevealLayer({
+  image,
+  cursorX,
+  cursorY,
+}: {
+  image: string;
+  cursorX: number;
+  cursorY: number;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const revealRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    resize();
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const reveal = revealRef.current;
+    if (!canvas || !reveal || cursorX < -100 || cursorY < -100) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const gradient = ctx.createRadialGradient(cursorX, cursorY, 0, cursorX, cursorY, SPOTLIGHT_R);
+    gradient.addColorStop(0, "rgba(255,255,255,1)");
+    gradient.addColorStop(0.4, "rgba(255,255,255,1)");
+    gradient.addColorStop(0.6, "rgba(255,255,255,0.75)");
+    gradient.addColorStop(0.75, "rgba(255,255,255,0.4)");
+    gradient.addColorStop(0.88, "rgba(255,255,255,0.12)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(cursorX, cursorY, SPOTLIGHT_R, 0, Math.PI * 2);
+    ctx.fill();
+
+    const mask = `url("${canvas.toDataURL()}")`;
+    reveal.style.maskImage = mask;
+    reveal.style.webkitMaskImage = mask;
+    reveal.style.maskSize = "100% 100%";
+    reveal.style.webkitMaskSize = "100% 100%";
+  }, [cursorX, cursorY]);
+
+  return (
+    <>
+      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" style={{ display: "none" }} />
+      <div
+        ref={revealRef}
+        className="absolute inset-0 bg-center bg-cover bg-no-repeat z-30 pointer-events-none"
+        style={{ backgroundImage: `url("${image}")` }}
+      />
+    </>
+  );
+}
+
+function ClearingLanding({
+  onEnter,
+  onHashed,
+}: {
+  onEnter: () => void;
+  onHashed: () => void;
+}) {
+  const mouse = useRef({ x: -999, y: -999 });
+  const smooth = useRef({ x: -999, y: -999 });
+  const rafRef = useRef<number | null>(null);
+  const [cursorPos, setCursorPos] = useState({ x: -999, y: -999 });
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.classList.add("clearing-landing-active");
+    const onMouseMove = (event: MouseEvent) => {
+      mouse.current.x = event.clientX;
+      mouse.current.y = event.clientY;
+    };
+
+    window.addEventListener("mousemove", onMouseMove, { passive: true });
+
+    const tick = () => {
+      smooth.current.x += (mouse.current.x - smooth.current.x) * 0.1;
+      smooth.current.y += (mouse.current.y - smooth.current.y) * 0.1;
+      setCursorPos({ x: smooth.current.x, y: smooth.current.y });
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      document.body.classList.remove("clearing-landing-active");
+      window.removeEventListener("mousemove", onMouseMove);
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  const enterClearing = () => {
+    setMenuOpen(false);
+    onEnter();
+  };
+
+  const enterHashed = () => {
+    setMenuOpen(false);
+    onHashed();
+  };
+
+  return (
+    <div className="min-h-screen bg-white tracking-[-0.02em]" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <section className="relative w-full overflow-hidden h-screen bg-black" style={{ height: "100dvh" }}>
+        <div
+          className="absolute inset-0 bg-center bg-cover bg-no-repeat z-10 hero-zoom"
+          style={{ backgroundImage: `url("${BG_IMAGE_1}")` }}
+        />
+
+        <RevealLayer image={BG_IMAGE_2} cursorX={cursorPos.x} cursorY={cursorPos.y} />
+
+        <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between p-4 sm:p-5">
+          <button type="button" onClick={enterClearing} className="flex items-center gap-2 text-white" aria-label="3maryjane home">
+            <svg width="26" height="26" viewBox="0 0 256 256" fill="#ffffff" aria-hidden="true">
+              <path d="M 256 256 L 128 256 L 0 128 L 128 128 Z M 256 128 L 128 128 L 0 0 L 128 0 Z" />
+            </svg>
+            <span className="text-white text-2xl font-playfair italic">3maryjane</span>
+          </button>
+
+          <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full px-2 py-2 items-center gap-1">
+            <button type="button" onClick={enterClearing} className="px-4 py-1.5 rounded-full text-sm font-medium bg-white/20 text-white">Clearing</button>
+            <button type="button" onClick={enterHashed} className="text-white/80 hover:bg-white/20 hover:text-white transition-colors px-4 py-1.5 rounded-full text-sm font-medium">Hashed</button>
+            <button type="button" onClick={enterClearing} className="text-white/80 hover:bg-white/20 hover:text-white transition-colors px-4 py-1.5 rounded-full text-sm font-medium">Risk Engine</button>
+            <button type="button" onClick={enterClearing} className="text-white/80 hover:bg-white/20 hover:text-white transition-colors px-4 py-1.5 rounded-full text-sm font-medium">Markets</button>
+            <a href="/jane" className="text-white/80 hover:bg-white/20 hover:text-white transition-colors px-4 py-1.5 rounded-full text-sm font-medium">Jane AI</a>
+          </div>
+
+          <button
+            type="button"
+            onClick={enterClearing}
+            className="hidden md:block bg-white text-gray-900 text-sm font-semibold px-6 py-2.5 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            Sign In
+          </button>
+
+          <button
+            type="button"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+            className="md:hidden w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white grid place-items-center"
+          >
+            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </nav>
+
+        {menuOpen && (
+          <div className="fixed inset-0 z-[90] bg-black/65 backdrop-blur-md md:hidden" onClick={() => setMenuOpen(false)}>
+            <div className="absolute top-20 left-4 right-4 rounded-[28px] border border-white/20 bg-black/80 p-4" onClick={(event) => event.stopPropagation()}>
+              <button type="button" onClick={enterClearing} className="w-full text-left text-white px-4 py-3 rounded-2xl hover:bg-white/10">Clearing</button>
+              <button type="button" onClick={enterHashed} className="w-full text-left text-white px-4 py-3 rounded-2xl hover:bg-white/10">Hashed</button>
+              <button type="button" onClick={enterClearing} className="w-full text-left text-white px-4 py-3 rounded-2xl hover:bg-white/10">Risk Engine</button>
+              <a href="/jane" className="block w-full text-left text-white px-4 py-3 rounded-2xl hover:bg-white/10">Jane AI</a>
+              <button type="button" onClick={enterClearing} className="mt-3 w-full bg-white text-gray-900 font-semibold px-6 py-3 rounded-full">Sign In</button>
+            </div>
+          </div>
+        )}
+
+        <div className="absolute top-[14%] left-0 right-0 z-50 flex flex-col items-center text-center px-5 pointer-events-none">
+          <h1 className="text-white leading-[0.95]">
+            <span
+              className="block font-playfair italic font-normal text-5xl sm:text-7xl md:text-8xl hero-anim hero-reveal"
+              style={{ letterSpacing: "-0.05em", animationDelay: "0.25s" }}
+            >
+              One account.
+            </span>
+            <span
+              className="block font-normal text-5xl sm:text-7xl md:text-8xl -mt-1 hero-anim hero-reveal"
+              style={{ letterSpacing: "-0.08em", animationDelay: "0.42s" }}
+            >
+              Every market.
+            </span>
+          </h1>
+        </div>
+
+        <div className="hidden sm:block absolute bottom-14 left-10 md:left-14 max-w-[260px] z-50 hero-anim hero-fade" style={{ animationDelay: "0.7s" }}>
+          <p className="text-sm text-white/80 leading-relaxed">
+            One clearing account brings cross-protocol exposure, margin, free collateral and execution into a single portfolio risk layer.
+          </p>
+        </div>
+
+        <div className="absolute bottom-10 sm:bottom-24 left-5 right-5 sm:left-auto sm:right-10 md:right-14 max-w-full sm:max-w-[290px] z-50 flex flex-col items-start gap-4 sm:gap-5 hero-anim hero-fade" style={{ animationDelay: "0.85s" }}>
+          <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
+            Clear positions across Monad, inspect portfolio health, and open Hashed to lock tokenized-equity collateral and borrow hUSD without selling the underlying testnet asset.
+          </p>
+          <button
+            type="button"
+            onClick={enterClearing}
+            className="group bg-[#e8702a] hover:bg-[#d2611f] text-white text-sm font-medium px-7 py-3 rounded-full transition-all hover:scale-[1.03] active:scale-95 hover:shadow-lg hover:shadow-[#e8702a]/30 inline-flex items-center gap-2"
+          >
+            Enter Clearing House
+            <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+          </button>
+        </div>
       </section>
     </div>
   );
