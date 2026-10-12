@@ -62,6 +62,34 @@ function nativeFalModels(): MediaModel[] {
       privacyScore: 0.60,
       zeroRetention: false,
       configured: true
+    },
+    {
+      id: "fal-wan-27-text-video",
+      provider: "fal",
+      label: "Wan 2.7 Text to Video",
+      modality: "video",
+      operations: ["text-to-video"],
+      endpoint: process.env.FAL_VIDEO_TEXT_MODEL ?? "fal-ai/wan/v2.7/text-to-video",
+      apiKeyEnv: "FAL_KEY",
+      qualityScore: 0.94,
+      latencyScore: 0.56,
+      privacyScore: 0.60,
+      zeroRetention: false,
+      configured: true
+    },
+    {
+      id: "fal-wan-27-image-video",
+      provider: "fal",
+      label: "Wan 2.7 Image to Video",
+      modality: "video",
+      operations: ["image-to-video"],
+      endpoint: process.env.FAL_VIDEO_IMAGE_MODEL ?? "fal-ai/wan/v2.7/image-to-video",
+      apiKeyEnv: "FAL_KEY",
+      qualityScore: 0.94,
+      latencyScore: 0.56,
+      privacyScore: 0.60,
+      zeroRetention: false,
+      configured: true
     }
   ];
 }
@@ -120,6 +148,44 @@ export class JaneMediaService {
     if (model.provider === "fal") {
       if (!process.env.FAL_KEY) throw new Error("MEDIA_PROVIDER_API_KEY_NOT_CONFIGURED");
       fal.config({ credentials: process.env.FAL_KEY });
+
+      if (request.modality === "video") {
+        if (!request.prompt?.trim()) throw new Error("VIDEO_PROMPT_REQUIRED");
+        const input: Record<string, unknown> = {
+          prompt: request.prompt,
+          resolution: request.metadata?.resolution ?? process.env.FAL_VIDEO_RESOLUTION ?? "720p",
+          duration: request.durationSeconds ?? Number(process.env.FAL_VIDEO_DURATION_SECONDS ?? 5),
+          enable_prompt_expansion: true,
+          enable_safety_checker: true
+        };
+        const aspectRatio = request.metadata?.aspectRatio ?? request.metadata?.aspect_ratio;
+        if (typeof aspectRatio === "string") input.aspect_ratio = aspectRatio;
+
+        if (request.operation === "image-to-video") {
+          const imageUrl = request.inputUrl ?? request.inputBase64;
+          if (!imageUrl) throw new Error("IMAGE_INPUT_REQUIRED");
+          input.image_url = imageUrl;
+        }
+
+        const queued = await fal.queue.submit(model.endpoint, { input });
+        return {
+          id:`media_${randomUUID().replace(/-/g,"")}`,
+          modality:request.modality,
+          operation:request.operation,
+          provider:model.provider,
+          model:model.id,
+          status:"queued",
+          requestId:queued.request_id,
+          estimatedCostUsd:model.pricePerGeneration ?? null,
+          routeScore:Number(route.selected.score.toFixed(4)),
+          alternatives:route.alternatives.map((item) => ({
+            id:item.model.id,
+            provider:item.model.provider,
+            estimatedCostUsd:item.model.pricePerGeneration ?? null
+          })),
+          output:null
+        };
+      }
 
       const baseInput: Record<string, unknown> = {
         prompt: request.prompt,
@@ -202,5 +268,38 @@ export class JaneMediaService {
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  async status(modelId: string, requestId: string) {
+    const model = models().find((candidate) => candidate.id === modelId);
+    if (!model) throw new Error("MEDIA_MODEL_NOT_FOUND");
+    if (model.provider !== "fal") throw new Error("MEDIA_STATUS_NOT_SUPPORTED");
+    if (!process.env.FAL_KEY) throw new Error("MEDIA_PROVIDER_API_KEY_NOT_CONFIGURED");
+    if (!requestId.trim()) throw new Error("MEDIA_REQUEST_ID_REQUIRED");
+
+    fal.config({ credentials: process.env.FAL_KEY });
+    const queueStatus = await fal.queue.status(model.endpoint, {
+      requestId,
+      logs: false
+    });
+
+    if (queueStatus.status === "COMPLETED") {
+      const result = await fal.queue.result(model.endpoint, { requestId });
+      return {
+        status: "completed",
+        provider: model.provider,
+        model: model.id,
+        requestId,
+        output: (result.data ?? {}) as Record<string, unknown>
+      };
+    }
+
+    return {
+      status: queueStatus.status === "IN_QUEUE" ? "queued" : "processing",
+      provider: model.provider,
+      model: model.id,
+      requestId,
+      providerStatus: queueStatus.status
+    };
   }
 }

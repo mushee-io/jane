@@ -102,7 +102,11 @@
     .chain-button:disabled{opacity:.35;cursor:not-allowed}.tx-link{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#8e97a5;word-break:break-all}
     .studio-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.studio-card{border:1px solid var(--line);background:#0c0f14;border-radius:13px;padding:13px}
     .studio-image{display:block;width:100%;max-height:560px;object-fit:contain;border-radius:12px;border:1px solid var(--line);background:#090b0f}
+    .studio-video{display:block;width:100%;max-height:560px;border-radius:12px;border:1px solid var(--line);background:#000}
     .studio-result-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .studio-video-options{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .studio-video-options.show{display:grid}
+    @media(max-width:620px){.studio-video-options{grid-template-columns:1fr}}
     .studio-card strong{display:block;margin-bottom:6px}.studio-card small{color:#7e8794;line-height:1.4}.studio-output{white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.5;color:#b7bec9;max-height:300px;overflow:auto}
     .studio-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.studio-tabs button{border:1px solid var(--line);background:#12161d;color:#9da5b2;border-radius:9px;padding:7px 9px}.studio-tabs button.active{background:var(--green);color:#080a0b;border-color:var(--green);font-weight:700}
     @media(max-width:1100px){.app{grid-template-columns:220px minmax(0,1fr)}.inspector{display:none}}
@@ -431,6 +435,26 @@
       <button data-modality="speech">Voice</button>
     </div>
     <select class="policy-input" id="studioOperation"></select>
+    <div class="studio-video-options" id="studioVideoOptions">
+      <select class="policy-input" id="studioVideoDuration">
+        <option value="5">5 seconds</option>
+        <option value="3">3 seconds</option>
+        <option value="8">8 seconds</option>
+        <option value="10">10 seconds</option>
+        <option value="15">15 seconds</option>
+      </select>
+      <select class="policy-input" id="studioVideoResolution">
+        <option value="720p">720p</option>
+        <option value="1080p">1080p</option>
+      </select>
+      <select class="policy-input" id="studioVideoAspect">
+        <option value="16:9">16:9 landscape</option>
+        <option value="9:16">9:16 portrait</option>
+        <option value="1:1">1:1 square</option>
+        <option value="4:3">4:3</option>
+        <option value="3:4">3:4</option>
+      </select>
+    </div>
     <textarea class="policy-input" id="studioPrompt" style="min-height:110px" placeholder="Describe what you want Jane to create..."></textarea>
     <input class="policy-input" id="studioInputUrl" placeholder="Optional input URL" />
     <div class="vault-actions"><button class="primary" id="studioGenerate">Route + create</button><button id="studioVoiceLive" style="display:none">Start realtime voice</button></div>
@@ -1329,6 +1353,8 @@
     document.querySelectorAll("#studioTabs button").forEach(function(button){button.classList.toggle("active",button.dataset.modality===modality);});
     var select=el("studioOperation");select.innerHTML="";
     el("studioVoiceLive").style.display=modality==="speech"?"inline-block":"none";
+    el("studioVideoOptions").classList.toggle("show",modality==="video");
+    el("studioInputUrl").placeholder=modality==="video"?"Image URL for image-to-video (optional for text-to-video)":"Optional input URL";
     (operationMap[modality]||[]).forEach(function(item){
       var option=document.createElement("option");option.value=item[0];option.textContent=item[1];select.appendChild(option);
     });
@@ -1371,25 +1397,68 @@
     }
   };
 
+  function renderStudioMedia(data){
+    var output=el("studioOutput");output.innerHTML="";
+    var images=data.output&&Array.isArray(data.output.images)?data.output.images:[];
+    var videoInfo=data.output&&data.output.video?data.output.video:null;
+
+    if(state.studioModality==="image"&&images.length&&images[0]&&images[0].url){
+      var image=document.createElement("img");image.className="studio-image";image.src=images[0].url;image.alt=el("studioPrompt").value.trim()||"Jane generated image";output.appendChild(image);
+      var imageMeta=document.createElement("div");imageMeta.className="studio-result-meta";
+      imageMeta.innerHTML='<span class="chip">'+escapeHtml(data.model||"image")+'</span><span class="chip">'+escapeHtml(data.provider||"provider")+'</span>';
+      output.appendChild(imageMeta);
+      var imageLink=document.createElement("a");imageLink.href=images[0].url;imageLink.target="_blank";imageLink.rel="noopener noreferrer";imageLink.className="tool";imageLink.style.display="inline-block";imageLink.style.marginTop="10px";imageLink.textContent="Open image";output.appendChild(imageLink);
+      return;
+    }
+
+    if(state.studioModality==="video"&&videoInfo&&videoInfo.url){
+      var video=document.createElement("video");video.className="studio-video";video.src=videoInfo.url;video.controls=true;video.playsInline=true;video.preload="metadata";output.appendChild(video);
+      var videoMeta=document.createElement("div");videoMeta.className="studio-result-meta";
+      videoMeta.innerHTML='<span class="chip">'+escapeHtml(data.model||"video")+'</span><span class="chip">'+escapeHtml(data.provider||"provider")+'</span>'+(videoInfo.duration?'<span class="chip">'+escapeHtml(videoInfo.duration)+'s</span>':'');
+      output.appendChild(videoMeta);
+      var videoLink=document.createElement("a");videoLink.href=videoInfo.url;videoLink.target="_blank";videoLink.rel="noopener noreferrer";videoLink.className="tool";videoLink.style.display="inline-block";videoLink.style.marginTop="10px";videoLink.textContent="Open video";output.appendChild(videoLink);
+      return;
+    }
+
+    output.textContent=JSON.stringify(data,null,2);
+  }
+
+  async function pollStudioVideo(model,requestId){
+    var output=el("studioOutput");
+    for(var attempt=0;attempt<90;attempt++){
+      output.textContent="Jane is generating your video… "+(attempt<2?"queued":"processing")+" · "+Math.min(99,Math.max(3,attempt*2))+"%";
+      await new Promise(function(resolve){setTimeout(resolve,4000);});
+      var response=await fetch("/api/media/status",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({model:model,requestId:requestId})});
+      var data=await response.json();
+      if(!response.ok)throw new Error(data.error||"Video status failed.");
+      if(data.status==="completed"){
+        renderStudioMedia(data);
+        return data;
+      }
+    }
+    throw new Error("Video is still processing. Try again in a moment.");
+  }
+
   el("studioGenerate").onclick=async function(){
     var button=this;button.disabled=true;button.textContent="Routing…";el("studioOutput").textContent="Finding the best creator model…";
     try{
-      var response=await fetch("/api/media/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
+      var payload={
         modality:state.studioModality,operation:el("studioOperation").value,prompt:el("studioPrompt").value.trim()||undefined,
         inputUrl:el("studioInputUrl").value.trim()||undefined,
         privacy:state.mode==="confidential"?"confidential":state.mode==="private"?"private":"standard"
-      })});
+      };
+      if(state.studioModality==="video"){
+        payload.durationSeconds=Number(el("studioVideoDuration").value||5);
+        payload.metadata={resolution:el("studioVideoResolution").value,aspectRatio:el("studioVideoAspect").value};
+      }
+      var response=await fetch("/api/media/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
       var data=await response.json();if(!response.ok)throw new Error(data.error||"Creator request failed.");
-      var output=el("studioOutput");output.innerHTML="";
-      var images=data.output&&Array.isArray(data.output.images)?data.output.images:[];
-      if(state.studioModality==="image"&&images.length&&images[0]&&images[0].url){
-        var image=document.createElement("img");image.className="studio-image";image.src=images[0].url;image.alt=el("studioPrompt").value.trim()||"Jane generated image";output.appendChild(image);
-        var meta=document.createElement("div");meta.className="studio-result-meta";
-        meta.innerHTML='<span class="chip">'+escapeHtml(data.model||"image")+'</span><span class="chip">'+escapeHtml(data.provider||"provider")+'</span>';
-        output.appendChild(meta);
-        var link=document.createElement("a");link.href=images[0].url;link.target="_blank";link.rel="noopener noreferrer";link.className="tool";link.style.display="inline-block";link.style.marginTop="10px";link.textContent="Open image";output.appendChild(link);
+      if(state.studioModality==="video"&&data.status==="queued"&&data.requestId){
+        button.textContent="Generating…";
+        el("studioOutput").textContent="Video queued on "+(data.model||"fal")+"…";
+        await pollStudioVideo(data.model,data.requestId);
       }else{
-        output.textContent=JSON.stringify(data,null,2);
+        renderStudioMedia(data);
       }
     }catch(error){el("studioOutput").textContent=error.message||"Creator request failed.";}
     finally{button.disabled=false;button.textContent="Route + create";}

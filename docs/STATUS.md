@@ -34,7 +34,7 @@
 ### M23–M35 — full product parity/superiority layer
 - configurable massive text + multimodal model catalog
 - Image Studio
-- Video Studio
+- Video Studio with native fal.ai Wan 2.7 text-to-video and image-to-video
 - Audio/Music Studio
 - TTS/STT/speech-to-speech + realtime WebRTC voice client
 - privacy-aware Deep Research with native Tavily Search + Extract adapter
