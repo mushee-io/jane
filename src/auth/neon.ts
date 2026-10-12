@@ -82,22 +82,9 @@ export async function proxyNeonAuth(request: Request, action: string) {
 
   let body: string | undefined;
   if (request.method !== "GET" && request.method !== "HEAD") {
-    const raw = await request.text();
-    if ((action === "sign-in/email" || action === "sign-up/email") &&
-        (request.headers.get("content-type") ?? "").includes("application/json")) {
-      try {
-        const payload = JSON.parse(raw || "{}") as Record<string, unknown>;
-        const callback = janePublicOrigin() + "/jane";
-        if (typeof payload.callbackURL !== "string" || !payload.callbackURL.startsWith(janePublicOrigin())) {
-          payload.callbackURL = callback;
-        }
-        body = JSON.stringify(payload);
-      } catch {
-        body = raw;
-      }
-    } else {
-      body = raw;
-    }
+    // Email/password auth does not need a redirect. Forward the client payload
+    // unchanged and let the session cookie response complete the login.
+    body = await request.text();
   }
 
   const upstream = await fetch(authBase + "/" + action, {
