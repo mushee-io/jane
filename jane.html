@@ -212,6 +212,7 @@
         <button data-open="networkButton"><span>Network Console</span><small>compute + Monad</small></button>
       </div>
     </div>
+    <button class="jane-nav-btn" id="accountButton">Sign in</button>
     <button class="jane-nav-btn" id="cleanSettingsButton">Settings</button>
   </div>
 </nav>
@@ -495,6 +496,32 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="accountModal">
+  <div class="modal">
+    <div class="modal-head"><h2>Jane account</h2><button class="tool" id="accountClose">Close</button></div>
+    <div id="accountSignedOut">
+      <p class="route-sub">Sign in to sync conversations, usage and credits across devices.</p>
+      <input class="policy-input" id="accountName" placeholder="Name (for sign up)" />
+      <input class="policy-input" id="accountEmail" type="email" placeholder="Email" />
+      <input class="policy-input" id="accountPassword" type="password" placeholder="Password" />
+      <div class="vault-actions"><button class="primary" id="accountSignIn">Sign in</button><button id="accountSignUp">Create account</button></div>
+    </div>
+    <div id="accountSignedIn" style="display:none">
+      <div class="panel">
+        <div class="panel-title">Account</div>
+        <div class="route-main" id="accountIdentity">Signed in</div>
+        <div class="route-sub" id="accountPlan">Free plan</div>
+      </div>
+      <div class="hero-grid" style="grid-template-columns:repeat(2,1fr);margin-top:12px">
+        <div class="hero-card"><strong id="accountCredits">$0.00 credits</strong><small>available balance</small></div>
+        <div class="hero-card"><strong id="accountUsage">$0.00 used</strong><small>this month</small></div>
+      </div>
+      <div class="vault-actions" style="margin-top:14px"><button id="accountSignOut">Sign out</button></div>
+    </div>
+    <div class="route-sub" id="accountStatus" style="margin-top:12px"></div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="charactersModal">
   <div class="modal">
     <div class="modal-head"><h2>Characters & Agents</h2><button class="tool" id="charactersClose">Close</button></div>
@@ -526,6 +553,9 @@
     voiceRecorder: null,
     voiceStream: null,
     voiceChunks: [],
+    account: null,
+    remoteHistory: [],
+    serverConversationId: null,
     attachedImage: null,
     attachedFileName: "",
     systemPrompt: "",
@@ -1143,6 +1173,22 @@
     }catch(_){}
   }
 
+  async function syncConversation(){
+    if(!state.account||!state.messages.length)return;
+    try{
+      var first=state.messages.find(function(m){return m.role==="user";});
+      var response=await fetch("/api/conversations",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
+        id:state.serverConversationId||undefined,
+        title:(first?first.content:"New chat").slice(0,70),
+        mode:state.mode,
+        messages:state.messages.slice(-100)
+      })});
+      var data=await response.json();
+      if(response.ok&&data.id)state.serverConversationId=data.id;
+      await loadRemoteHistory();
+    }catch(_){}
+  }
+
   function saveHistory(){
     try{
       var all = JSON.parse(localStorage.getItem("jane_history") || "[]");
@@ -1152,18 +1198,101 @@
       all.unshift(item); all = all.slice(0,20);
       localStorage.setItem("jane_history",JSON.stringify(all));
       renderHistory();
+      syncConversation();
     }catch(_){}
   }
 
   function renderHistory(){
     var holder = el("history"); holder.innerHTML = "";
     try{
-      var all = JSON.parse(localStorage.getItem("jane_history") || "[]");
-      all.forEach(function(item){
-        var b=document.createElement("button");b.textContent=item.title;b.title=item.title;
-        b.onclick=function(){loadChat(item);};holder.appendChild(b);
-      });
-      if(!all.length) holder.innerHTML='<div style="color:#555e6b;font-size:12px;padding:8px">No saved sessions yet.</div>';
+      if(state.account&&state.remoteHistory.length){
+        state.remoteHistory.forEach(function(item){
+          var b=document.createElement("button");b.textContent=item.title;b.title=item.title+" · synced";
+          b.onclick=function(){loadRemoteConversation(item.id);};holder.appendChild(b);
+        });
+      }else{
+        var all = JSON.parse(localStorage.getItem("jane_history") || "[]");
+        all.forEach(function(item){
+          var b=document.createElement("button");b.textContent=item.title;b.title=item.title;
+          b.onclick=function(){loadChat(item);};holder.appendChild(b);
+        });
+        if(!all.length) holder.innerHTML='<div style="color:#555e6b;font-size:12px;padding:8px">No saved sessions yet.</div>';
+      }
+    }catch(_){}
+  }
+
+  async function loadRemoteHistory(){
+    if(!state.account)return;
+    try{
+      var response=await fetch("/api/conversations");
+      var data=await response.json();
+      if(response.ok){state.remoteHistory=data.items||[];renderHistory();}
+    }catch(_){}
+  }
+
+  async function loadRemoteConversation(id){
+    try{
+      var response=await fetch("/api/conversations?id="+encodeURIComponent(id));
+      var data=await response.json();
+      if(!response.ok||!data.item)return;
+      state.serverConversationId=id;
+      var conversation=data.item.conversation||{};
+      state.mode=conversation.mode||"auto";
+      state.messages=(data.item.messages||[]).map(function(m){return {role:m.role,content:m.content};});
+      messagesEl.innerHTML="";hero.style.display="none";document.body.classList.add("conversation-started");
+      state.messages.forEach(function(m){addMessage(m.role,m.content);});
+      function showAccount(accountData){
+    state.account=accountData||null;
+    el("accountSignedOut").style.display=state.account?"none":"block";
+    el("accountSignedIn").style.display=state.account?"block":"none";
+    el("accountButton").textContent=state.account?((state.account.user&&state.account.user.name)||"Account"):"Sign in";
+    if(state.account){
+      var profile=state.account.account&&state.account.account.profile||{};
+      var usage=state.account.account&&state.account.account.usage||{};
+      el("accountIdentity").textContent=(state.account.user.name||state.account.user.email||"Jane user");
+      el("accountPlan").textContent=(profile.plan||"free")+" plan";
+      el("accountCredits").textContent="$"+Number(profile.credit_balance_usd||0).toFixed(2)+" credits";
+      el("accountUsage").textContent="$"+Number(usage.spend_usd||0).toFixed(4)+" used";
+      loadRemoteHistory();
+    }else{
+      state.remoteHistory=[];renderHistory();
+    }
+  }
+
+  async function refreshAccount(){
+    try{
+      var response=await fetch("/api/account");
+      if(response.status===401){showAccount(null);return;}
+      var data=await response.json();
+      if(response.ok)showAccount(data);else showAccount(null);
+    }catch(_){showAccount(null);}
+  }
+
+  async function authAction(action){
+    var email=el("accountEmail").value.trim(),password=el("accountPassword").value,name=el("accountName").value.trim();
+    if(!email||!password){el("accountStatus").textContent="Email and password are required.";return;}
+    el("accountStatus").textContent="Working…";
+    var body=action==="sign-up/email"?{email:email,password:password,name:name||email.split("@")[0]}:{email:email,password:password};
+    try{
+      var response=await fetch("/api/auth/"+action,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+      var data=await response.json().catch(function(){return {};});
+      if(!response.ok){el("accountStatus").textContent=data.message||data.error||"Authentication failed.";return;}
+      el("accountStatus").textContent=action==="sign-up/email"?"Account created.":"Signed in.";
+      await refreshAccount();
+    }catch(error){el("accountStatus").textContent=error.message||"Authentication failed.";}
+  }
+
+  el("accountButton").onclick=function(){openModal("accountModal");refreshAccount();};
+  el("accountClose").onclick=function(){closeModal("accountModal");};
+  el("accountSignIn").onclick=function(){authAction("sign-in/email");};
+  el("accountSignUp").onclick=function(){authAction("sign-up/email");};
+  el("accountSignOut").onclick=async function(){
+    try{await fetch("/api/auth/sign-out",{method:"POST",headers:{"content-type":"application/json"},body:"{}"});}catch(_){}
+    state.serverConversationId=null;showAccount(null);el("accountStatus").textContent="Signed out.";
+  };
+  refreshAccount();
+
+  document.querySelectorAll(".mode").forEach(function(b){b.classList.toggle("active",b.dataset.mode===state.mode);});
     }catch(_){}
   }
 
@@ -1176,7 +1305,7 @@
 
   function reset(){
     document.body.classList.remove("conversation-started");
-    state.messages=[];state.currentId=crypto.randomUUID?crypto.randomUUID():String(Date.now());state.privacyMap={};
+    state.messages=[];state.currentId=crypto.randomUUID?crypto.randomUUID():String(Date.now());state.privacyMap={};state.serverConversationId=null;
     state.characterId=null;state.characterName=null;promptEl.placeholder="Ask anything. Jane will choose the intelligence...";
     messagesEl.innerHTML="";hero.style.display="block";promptEl.value="";setPrivacy({count:0,categories:[]});
     el("routeModel").textContent="Waiting for a task";el("routeReason").textContent="Auto balances quality, cost, speed and privacy.";
