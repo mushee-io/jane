@@ -101,6 +101,8 @@
     .chain-button{width:100%;border:1px solid rgba(183,255,74,.3);background:rgba(183,255,74,.08);color:var(--green);border-radius:9px;padding:9px;font-weight:700;margin-top:8px}
     .chain-button:disabled{opacity:.35;cursor:not-allowed}.tx-link{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:#8e97a5;word-break:break-all}
     .studio-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.studio-card{border:1px solid var(--line);background:#0c0f14;border-radius:13px;padding:13px}
+    .studio-image{display:block;width:100%;max-height:560px;object-fit:contain;border-radius:12px;border:1px solid var(--line);background:#090b0f}
+    .studio-result-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
     .studio-card strong{display:block;margin-bottom:6px}.studio-card small{color:#7e8794;line-height:1.4}.studio-output{white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.5;color:#b7bec9;max-height:300px;overflow:auto}
     .studio-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.studio-tabs button{border:1px solid var(--line);background:#12161d;color:#9da5b2;border-radius:9px;padding:7px 9px}.studio-tabs button.active{background:var(--green);color:#080a0b;border-color:var(--green);font-weight:700}
     @media(max-width:1100px){.app{grid-template-columns:220px minmax(0,1fr)}.inspector{display:none}}
@@ -1377,8 +1379,19 @@
         inputUrl:el("studioInputUrl").value.trim()||undefined,
         privacy:state.mode==="confidential"?"confidential":state.mode==="private"?"private":"standard"
       })});
-      var data=await response.json();el("studioOutput").textContent=JSON.stringify(data,null,2);
-    }catch(error){el("studioOutput").textContent=error.message||"Creator request failed."}
+      var data=await response.json();if(!response.ok)throw new Error(data.error||"Creator request failed.");
+      var output=el("studioOutput");output.innerHTML="";
+      var images=data.output&&Array.isArray(data.output.images)?data.output.images:[];
+      if(state.studioModality==="image"&&images.length&&images[0]&&images[0].url){
+        var image=document.createElement("img");image.className="studio-image";image.src=images[0].url;image.alt=el("studioPrompt").value.trim()||"Jane generated image";output.appendChild(image);
+        var meta=document.createElement("div");meta.className="studio-result-meta";
+        meta.innerHTML='<span class="chip">'+escapeHtml(data.model||"image")+'</span><span class="chip">'+escapeHtml(data.provider||"provider")+'</span>';
+        output.appendChild(meta);
+        var link=document.createElement("a");link.href=images[0].url;link.target="_blank";link.rel="noopener noreferrer";link.className="tool";link.style.display="inline-block";link.style.marginTop="10px";link.textContent="Open image";output.appendChild(link);
+      }else{
+        output.textContent=JSON.stringify(data,null,2);
+      }
+    }catch(error){el("studioOutput").textContent=error.message||"Creator request failed.";}
     finally{button.disabled=false;button.textContent="Route + create";}
   };
 
