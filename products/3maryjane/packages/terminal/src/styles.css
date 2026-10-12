@@ -1,20 +1,20 @@
 :root {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #f4f4f1;
-  background: #050505;
+  font-family: "Poppins", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #ffffff;
+  background: #000000;
   font-synthesis: none;
   text-rendering: geometricPrecision;
   scroll-behavior: smooth;
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; min-height: 100vh; background: #050505; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: #000; color:#fff; }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 a { color: inherit; text-decoration: none; }
 
-.shell { min-height: 100vh; max-width: 1680px; margin: 0 auto; border-left: 1px solid #292929; border-right: 1px solid #292929; }
-.topbar { min-height: 92px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px; padding: 0 28px; border-bottom: 1px solid #2b2b2b; position: sticky; top: 0; z-index: 20; background: rgba(5,5,5,.94); backdrop-filter: blur(18px); }
+.shell { min-height: 100vh; width:100%; max-width:none; margin:0; border:0; background:#000; }
+.topbar { min-height:92px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:24px; padding:0 clamp(20px,6.95vw,120px); border-bottom:1px solid #202020; position:sticky; top:0; z-index:20; background:rgba(0,0,0,.92); backdrop-filter:blur(18px); }
 .brand-lockup { min-width: 0; }
 .topbar h1 { margin: 4px 0 0; font-size: clamp(22px, 2.2vw, 34px); line-height: 1; letter-spacing: -.055em; white-space: nowrap; }
 .eyebrow, .kicker { font-size: 10px; letter-spacing: .18em; color: #868686; font-weight: 700; }
@@ -29,7 +29,7 @@ a { color: inherit; text-decoration: none; }
 .network-dot span, .light { width: 7px; height: 7px; border-radius: 100%; background: #4b4b4b; display: inline-block; }
 .network-dot span, .light.active { background: #f3f3ef; box-shadow: 0 0 16px rgba(255,255,255,.45); }
 
-main { padding: 0 28px 40px; }
+main { padding:0 clamp(20px,6.95vw,120px) 64px; }
 .product-page { min-height: calc(100vh - 160px); }
 .mary-jane-page { padding-top: 40px; }
 .hashed-page { padding-top: 40px; }
@@ -109,7 +109,7 @@ textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, m
 .mary-jane-footer { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; padding: 15px 30px; border-top: 1px solid #2a2a2a; color: #606060; font-size: 8px; letter-spacing: .15em; }
 .mary-jane-footer span:last-child { justify-self: end; color: #b2b2ad; }
 
-footer { display: flex; justify-content: space-between; padding: 26px 28px; font-size: 9px; letter-spacing: .15em; color: #555; }
+footer { display:flex; justify-content:space-between; padding:26px clamp(20px,6.95vw,120px); font-size:9px; letter-spacing:.15em; color:#666; border-top:1px solid #202020; }
 
 @media (max-width: 1100px) {
   .topbar { grid-template-columns: 1fr auto; padding-top: 12px; padding-bottom: 12px; }
@@ -806,4 +806,26 @@ footer { display: flex; justify-content: space-between; padding: 26px 28px; font
   .hashed-exposure-row { grid-template-columns: 1fr 1fr 1fr; }
   .hashed-exposure-row span:nth-child(4),
   .hashed-exposure-row strong:nth-child(4) { display: none; }
+}
+
+/* 3maryjane body follows the glass-cube homepage in the same visual system. */
+.shell::before{
+  content:"3MARYJANE / LIVE CLEARING TERMINAL";
+  display:block;
+  padding:34px clamp(20px,6.95vw,120px) 18px;
+  color:#7d7d7d;
+  background:#000;
+  font-family:"Poppins",sans-serif;
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.2em;
+  border-bottom:1px solid #202020;
+}
+.button,.product-nav button,input,textarea{font-family:"Poppins",sans-serif}
+.account-box,.panel,.setup-banner,.hashed-action-box,.hashed-position-box,.hashed-clearing-demo,.hashed-thesis,.mary-jane{
+  background:#000;
+}
+@media(max-width:650px){
+  .topbar{padding-left:20px;padding-right:20px}
+  main,footer{padding-left:20px;padding-right:20px}
 }
