@@ -5,7 +5,7 @@ export interface JaneAuthUser {
 }
 
 function authBaseUrl() {
-  const value = process.env.NEON_AUTH_BASE_URL?.replace(/\/$/, "");
+  const value = (process.env.JANE_NEON_AUTH_BASE_URL ?? process.env.NEON_AUTH_BASE_URL)?.replace(/\/$/, "");
   if (!value) throw new Error("NEON_AUTH_BASE_URL_NOT_CONFIGURED");
   return value;
 }
