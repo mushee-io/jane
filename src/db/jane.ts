@@ -6,7 +6,96 @@ function sql() {
   return neon(url);
 }
 
+let schemaReady: Promise<void> | null = null;
+
+async function ensureJaneSchema() {
+  if (schemaReady) return schemaReady;
+  schemaReady = (async () => {
+    const q = sql();
+    await q`create extension if not exists pgcrypto`;
+    await q`
+      create table if not exists jane_profiles (
+        user_id text primary key,
+        display_name text,
+        plan text not null default 'free',
+        credit_balance_usd numeric(12,6) not null default 0,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      )
+    `;
+    await q`
+      create table if not exists jane_conversations (
+        id uuid primary key default gen_random_uuid(),
+        user_id text not null,
+        title text not null default 'New chat',
+        mode text not null default 'auto',
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      )
+    `;
+    await q`
+      create table if not exists jane_messages (
+        id uuid primary key default gen_random_uuid(),
+        conversation_id uuid not null references jane_conversations(id) on delete cascade,
+        user_id text not null,
+        role text not null check (role in ('system','user','assistant')),
+        content text not null,
+        model_id text,
+        provider text,
+        cost_usd numeric(14,8),
+        created_at timestamptz not null default now()
+      )
+    `;
+    await q`
+      create table if not exists jane_usage_events (
+        id uuid primary key default gen_random_uuid(),
+        user_id text not null,
+        request_id text,
+        modality text not null default 'text',
+        provider text,
+        model_id text,
+        input_tokens integer,
+        output_tokens integer,
+        cost_usd numeric(14,8) not null default 0,
+        created_at timestamptz not null default now()
+      )
+    `;
+    await q`
+      create table if not exists jane_credit_ledger (
+        id uuid primary key default gen_random_uuid(),
+        user_id text not null,
+        kind text not null check (kind in ('grant','purchase','usage','refund','adjustment')),
+        amount_usd numeric(12,6) not null,
+        reference text,
+        metadata jsonb not null default '{}'::jsonb,
+        created_at timestamptz not null default now()
+      )
+    `;
+    await q`
+      create table if not exists jane_subscriptions (
+        user_id text primary key,
+        plan text not null default 'free',
+        status text not null default 'active',
+        provider text,
+        provider_customer_id text,
+        provider_subscription_id text,
+        current_period_end timestamptz,
+        updated_at timestamptz not null default now()
+      )
+    `;
+    await q`create index if not exists jane_conversations_user_updated_idx on jane_conversations(user_id, updated_at desc)`;
+    await q`create index if not exists jane_messages_conversation_created_idx on jane_messages(conversation_id, created_at asc)`;
+    await q`create index if not exists jane_usage_user_created_idx on jane_usage_events(user_id, created_at desc)`;
+    await q`create index if not exists jane_credit_ledger_user_created_idx on jane_credit_ledger(user_id, created_at desc)`;
+  })().catch((error) => {
+    schemaReady = null;
+    throw error;
+  });
+  return schemaReady;
+}
+
 export async function ensureProfile(user: {id:string; name?:string|null}) {
+  await ensureJaneSchema();
   const q = sql();
   const rows = await q`
     insert into jane_profiles (user_id, display_name)
@@ -20,6 +109,7 @@ export async function ensureProfile(user: {id:string; name?:string|null}) {
 }
 
 export async function accountSnapshot(userId: string) {
+  await ensureJaneSchema();
   const q = sql();
   const [profile] = await q`
     select user_id, display_name, plan, credit_balance_usd, created_at, updated_at
@@ -38,6 +128,7 @@ export async function accountSnapshot(userId: string) {
 }
 
 export async function recordUsage(input:{userId:string;requestId?:string;modality?:string;provider?:string;modelId?:string;inputTokens?:number;outputTokens?:number;costUsd?:number}) {
+  await ensureJaneSchema();
   const q=sql();
   await q`
     insert into jane_usage_events(user_id,request_id,modality,provider,model_id,input_tokens,output_tokens,cost_usd)
@@ -46,6 +137,7 @@ export async function recordUsage(input:{userId:string;requestId?:string;modalit
 }
 
 export async function listConversations(userId:string){
+  await ensureJaneSchema();
   const q=sql();
   return q`
     select id,title,mode,created_at,updated_at
@@ -55,6 +147,7 @@ export async function listConversations(userId:string){
 }
 
 export async function saveConversation(input:{userId:string;id?:string;title?:string;mode?:string;messages:Array<{role:string;content:string;modelId?:string;provider?:string;costUsd?:number}>}){
+  await ensureJaneSchema();
   const q=sql();
   const rows=input.id
     ? await q`
@@ -80,6 +173,7 @@ export async function saveConversation(input:{userId:string;id?:string;title?:st
 }
 
 export async function getConversation(userId:string,id:string){
+  await ensureJaneSchema();
   const q=sql();
   const [conversation]=await q`
     select id,title,mode,created_at,updated_at from jane_conversations
