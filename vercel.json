@@ -23,6 +23,10 @@
       "destination": "/api/ai-chat"
     },
     {
+      "source": "/api/media/generate",
+      "destination": "/api/media-generate"
+    },
+    {
       "source": "/v1/:path*",
       "destination": "/api/index?v1=:path*"
     },
@@ -40,6 +44,9 @@
     },
     "api/ai-chat.ts": {
       "maxDuration": 30
+    },
+    "api/media-generate.ts": {
+      "maxDuration": 60
     }
   }
 }
