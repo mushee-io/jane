@@ -12,6 +12,8 @@ test("FAL_KEY enables native Jane image routes", () => {
 
     assert.equal(ids.has("fal-flux-schnell"), true);
     assert.equal(ids.has("fal-flux-dev-edit"), true);
+    assert.equal(ids.has("fal-wan-27-text-video"), true);
+    assert.equal(ids.has("fal-wan-27-image-video"), true);
 
     const textRoute = media.choose({
       modality: "image",
@@ -28,6 +30,21 @@ test("FAL_KEY enables native Jane image routes", () => {
       inputUrl: "https://example.com/image.jpg"
     });
     assert.equal(editRoute.selected?.model.provider, "fal");
+
+    const textVideo = media.choose({
+      modality: "video",
+      operation: "text-to-video",
+      prompt: "A cinematic drone shot over London"
+    });
+    assert.equal(textVideo.selected?.model.endpoint, "fal-ai/wan/v2.7/text-to-video");
+
+    const imageVideo = media.choose({
+      modality: "video",
+      operation: "image-to-video",
+      prompt: "Animate this image with a slow camera push",
+      inputUrl: "https://example.com/frame.jpg"
+    });
+    assert.equal(imageVideo.selected?.model.endpoint, "fal-ai/wan/v2.7/image-to-video");
   } finally {
     if (original === undefined) delete process.env.FAL_KEY;
     else process.env.FAL_KEY = original;
