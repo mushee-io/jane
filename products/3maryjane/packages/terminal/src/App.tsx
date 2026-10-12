@@ -181,7 +181,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("Connect a wallet, then load or create a deployed 3maryjane account.");
   const [activeProduct, setActiveProduct] = useState<"clearing" | "hashed">("clearing");
-  const [showTerminal, setShowTerminal] = useState(() => window.location.hash === "#terminal");
+  const [showTerminal, setShowTerminal] = useState(false);
 
   const account = isAddress(accountInput) ? (getAddress(accountInput) as Address) : null;
   const coreConfigured = Boolean(deployment.accountFactory && deployment.adapterRegistry);
@@ -1405,6 +1405,7 @@ function ClearingLanding({
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
+    if (window.location.hash === "#terminal") history.replaceState(null, "", "/clearing");
     document.body.classList.add("clearing-landing-active");
     const onMouseMove = (event: MouseEvent) => {
       mouse.current.x = event.clientX;
