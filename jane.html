@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=block" rel="stylesheet">
   <meta name="theme-color" content="#08090b" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <script src="/assets/e2ee.js" defer></script>
@@ -226,9 +227,90 @@
       .hero-card{white-space:nowrap}
     }
 
+
+/* Jane's full-viewport landscape composition, scaled from the supplied 1560×1008 frame. */
+:root{--u:min(.06410256vw,.12400794vh);--vu:.09920635vh;--green:#f8b285;--green2:#e88654}
+@supports(height:100dvh){:root{--u:min(.06410256vw,.12400794dvh);--vu:.09920635dvh}}
+body{background:#0a0d12;font-synthesis:none;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision;font-variation-settings:"opsz" 32}
+.stage-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;pointer-events:none}
+.jane-shell-nav{position:absolute;left:calc(225*var(--u));right:calc(225*var(--u));top:calc(41*var(--vu));height:calc(43*var(--u));padding:0;border:0;background:none;backdrop-filter:none}
+.jane-shell-brand{font-size:calc(18.49*var(--u));font-weight:500;letter-spacing:-.0154em;gap:calc(12*var(--u));text-shadow:0 1px 10px #0005}
+.jane-shell-brand i{width:calc(34*var(--u));height:calc(34*var(--u));background:radial-gradient(circle,#151519 0 15%,white 16% 35%,#9c86ce 36%);box-shadow:none}
+.jane-shell-left .secondary,.sidebar-toggle{display:none}
+.jane-shell-right{gap:calc(32*var(--u))}
+.jane-nav-btn{font-size:calc(15.7*var(--u));color:white;font-weight:400}
+.jane-nav-btn.primary{background:none;border:0}
+#accountButton{width:calc(140*var(--u));height:calc(43*var(--u));border-radius:calc(12*var(--u));background:linear-gradient(#3d3d3f,#1d1d20);box-shadow:inset 0 1px #ffffff1a,0 2px 14px #0005;font-weight:520}
+.app{height:100vh;height:100dvh;display:block;background:none}
+body:not(.conversation-started) .sidebar{display:none!important}
+.main{height:100%;display:block}
+body:not(.conversation-started) .topbar{display:none}
+body:not(.conversation-started) .chat{padding:0;overflow:hidden;height:100%}
+body:not(.conversation-started) .hero{position:absolute;top:calc(323*var(--vu));left:0;width:100%;padding:0;text-align:center}
+body:not(.conversation-started) .hero h1{font-size:calc(36.25*var(--u));font-weight:410;line-height:1.1;letter-spacing:.0018em;margin:0;max-width:none;color:white;text-shadow:0 2px 22px #0005}
+body:not(.conversation-started) .hero p,body:not(.conversation-started) .hero-grid{display:none}
+body:not(.conversation-started) .composer-wrap{top:calc(413*var(--vu));left:50%;transform:translateX(-50%);width:calc(708*var(--u));margin-left:calc(-1.5*var(--u));padding:0}
+body:not(.conversation-started) .composer{height:calc(143*var(--u));position:relative;padding:0;border:0;border-radius:calc(26*var(--u));background:rgba(41,41,43,.955);backdrop-filter:blur(calc(26*var(--u))) saturate(112%);box-shadow:inset 0 0 0 1px #d6e4ff24,0 calc(22*var(--u)) calc(60*var(--u)) #0005}
+body:not(.conversation-started) .composer textarea{position:absolute;left:calc(27*var(--u));top:calc(33*var(--u));width:calc(657*var(--u));height:calc(38*var(--u));min-height:0;max-height:none;padding:0;font-size:calc(9.97*var(--u));line-height:1.35;letter-spacing:.007em}
+.composer textarea::placeholder{color:#8b8c8e}
+body:not(.conversation-started) .composer-bottom{position:absolute;left:calc(19*var(--u));right:calc(-1*var(--u));top:calc(92*var(--u));height:calc(30*var(--u));display:block}
+body:not(.conversation-started) .tools{gap:calc(5.5*var(--u));height:100%}
+body:not(.conversation-started) .tool{width:calc(107*var(--u));height:calc(30*var(--u));padding:0 calc(8*var(--u));border-radius:calc(9*var(--u));font-size:calc(9*var(--u));font-weight:500;line-height:1;color:#909093;white-space:nowrap;background:linear-gradient(#ffffff16,#ffffff0a);border:1px solid #ffffff0d;justify-content:center}
+body:not(.conversation-started) .privacy-toggle input{width:calc(10*var(--u));height:calc(10*var(--u));margin:0}
+.composer-right{display:flex;align-items:center;gap:14px}
+.model-label{color:#98999c;background:none;border:0;display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:0;white-space:nowrap}
+.model-label svg{width:7px}.paperclip{padding:0;border:0;background:none;color:#a9aaad}.paperclip svg{width:20px}.paperclip:hover{color:white}
+body:not(.conversation-started) .composer-right{position:absolute;inset:0;pointer-events:none;display:block}
+body:not(.conversation-started) .composer-right>*{position:absolute;pointer-events:auto}
+body:not(.conversation-started) .model-label{left:calc(510.2*var(--u));top:calc(15.5*var(--u));font-size:calc(10.4*var(--u));line-height:1;gap:calc(6.2*var(--u))}
+body:not(.conversation-started) .model-label svg{width:calc(6.8*var(--u))}
+body:not(.conversation-started) .paperclip{left:calc(599.15*var(--u));top:calc(10.14*var(--u))}
+body:not(.conversation-started) .paperclip svg{width:calc(19.79*var(--u))}
+.send{background:linear-gradient(163deg,#fbbc94,#f49d70 46%,#e88654);color:white;font-weight:400;box-shadow:0 3px 12px #d26e3c57}
+body:not(.conversation-started) .send{left:calc(640*var(--u));top:calc(2*var(--u));width:calc(35*var(--u));height:calc(35*var(--u));min-width:0;padding:0;border-radius:50%;font-size:0;display:grid;place-items:center}
+body:not(.conversation-started) .send:after{content:"";width:calc(12*var(--u));height:calc(14*var(--u));background:white;clip-path:polygon(50% 0,100% 43%,65% 43%,65% 100%,35% 100%,35% 43%,0 43%)}
+body:not(.conversation-started) .disclaimer{display:none}
+.design-proof{position:absolute;top:calc(799*var(--vu));left:0;width:100%;text-align:center;color:white;text-shadow:0 1px 12px #0006}
+.design-proof p{font-size:calc(14.01*var(--u));font-weight:480;letter-spacing:.0065em;margin:0}
+.design-proof div{display:flex;justify-content:center;gap:calc(62*var(--u));margin-top:calc(52.3*var(--vu));font-size:calc(24*var(--u));font-weight:500}
+body.conversation-started .stage-video,body.conversation-started .design-proof{display:none}
+body.conversation-started{background:#0a0d12}
+body.conversation-started .app{padding-top:100px}
+body.conversation-started .main{display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+body.conversation-started .composer-wrap{position:relative;left:auto;top:auto;transform:none;width:auto}
+:focus-visible{outline:2px solid #f8b285;outline-offset:3px}
+@media(min-width:600px) and (max-width:1180px) and (min-height:600px){
+:root{--u:1px}.jane-shell-nav{left:clamp(28px,4.2vw,60px);right:clamp(28px,4.2vw,60px);top:clamp(24px,3.4vh,44px)}.jane-shell-right{gap:12px}.jane-nav-btn{font-size:13px}
+body:not(.conversation-started) .hero{top:32vh}body:not(.conversation-started) .hero h1{font-size:clamp(27px,4.3vw,44px)}
+body:not(.conversation-started) .composer-wrap{top:43vh;width:min(calc(100% - 56px),clamp(516px,74vw,760px));margin:0}
+body:not(.conversation-started) .composer{height:auto;padding:clamp(15px,1.9vw,24px);display:flex;flex-direction:column;gap:clamp(20px,3.2vh,44px)}
+body:not(.conversation-started) .composer textarea{position:static;width:100%;height:38px;font-size:clamp(11px,1.35vw,14px)}
+body:not(.conversation-started) .composer-bottom{position:static;height:auto;display:flex;gap:8px;flex-wrap:nowrap}
+body:not(.conversation-started) .tools{gap:6px}body:not(.conversation-started) .tool{width:auto;height:30px;padding:0 7px;font-size:9.6px}
+body:not(.conversation-started) .composer-right{position:static;display:flex;align-items:center;margin-left:auto;gap:0}
+body:not(.conversation-started) .composer-right>*{position:static}body:not(.conversation-started) .paperclip{margin-left:clamp(9px,1.4vw,20px)}body:not(.conversation-started) .send{margin-left:clamp(9px,1.3vw,18px);width:clamp(32px,3.5vw,38px);height:clamp(32px,3.5vw,38px)}
+.design-proof{top:auto;bottom:6vh}.design-proof div{margin-top:25px}
+}
+@media(max-width:599px),(max-height:599px) and (max-width:1180px){
+:root{--u:1px}body{overflow:hidden}.jane-shell-nav{left:max(18px,env(safe-area-inset-left));right:max(18px,env(safe-area-inset-right));top:max(18px,env(safe-area-inset-top));height:40px}.jane-shell-brand i{width:30px;height:30px}.jane-shell-right{gap:6px}#routeDetails,#cleanSettingsButton{display:none}.jane-nav-btn{font-size:12px;padding:7px}#accountButton{width:80px;height:38px}.jane-shell-brand{font-size:18px}
+body:not(.conversation-started) .hero{top:26vh;padding:0 18px}body:not(.conversation-started) .hero h1{max-width:15ch;margin:auto;font-size:clamp(29px,7.6vw,50px);line-height:1.14;letter-spacing:-.012em}
+body:not(.conversation-started) .composer-wrap{top:44vh;width:calc(100% - 36px);max-width:600px;margin:0}
+body:not(.conversation-started) .composer{height:auto;padding:clamp(13px,3.4vw,18px);display:flex;flex-direction:column;gap:clamp(16px,4.6vh,34px)}
+body:not(.conversation-started) .composer textarea{position:static;width:100%;height:38px;font-size:clamp(11px,2.95vw,14px)}
+body:not(.conversation-started) .composer-bottom{position:static;height:auto;display:flex;flex-direction:column;align-items:stretch;gap:12px}
+body:not(.conversation-started) .tools{flex-wrap:wrap;gap:5px}body:not(.conversation-started) .tool{width:auto;height:30px;padding:0 8px;font-size:10px}
+body:not(.conversation-started) .composer-right{position:static;display:flex;align-items:center;gap:0}body:not(.conversation-started) .composer-right>*{position:static}body:not(.conversation-started) .paperclip{margin-left:auto}body:not(.conversation-started) .send{margin-left:14px;width:40px;height:40px}
+.design-proof{top:auto;bottom:max(28px,env(safe-area-inset-bottom))}.design-proof div{font-size:20px;gap:28px;margin-top:20px}.design-proof p{font-size:12px}
+body.conversation-started .app{height:100dvh;padding-top:76px}body.conversation-started .model-label{display:none}
+}
+@media(max-width:1180px) and (max-height:560px){body:not(.conversation-started) .hero{top:22vh}body:not(.conversation-started) .hero h1{max-width:none;font-size:clamp(24px,5.4vh,34px)}body:not(.conversation-started) .composer-wrap{top:35vh}.design-proof div{display:none}}
+@media(prefers-reduced-motion:no-preference){body:not(.conversation-started) .hero h1{animation:jane-focus 1s cubic-bezier(.16,1,.3,1) .3s both}body:not(.conversation-started) .composer{animation:jane-panel .9s cubic-bezier(.16,1,.3,1) .62s both}.design-proof{animation:jane-panel .55s ease 1.08s both}@keyframes jane-focus{from{opacity:0;transform:translateY(14px);filter:blur(6px)}to{opacity:1;transform:none;filter:blur(0)}}@keyframes jane-panel{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:none}}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
   </style>
 </head>
 <body>
+<video class="stage-video" autoplay muted loop playsinline aria-hidden="true" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260826_124724_bc041163-d651-425f-aea3-2acc1efc2c96.mp4"></video>
 <nav class="jane-shell-nav" aria-label="Jane">
   <div class="jane-shell-left">
     <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Toggle conversation history" title="Conversation history">☰</button>
@@ -288,7 +370,7 @@
 
     <section class="chat" id="chat">
       <div class="hero" id="hero">
-        <h1>Ask Jane <span>anything.</span></h1>
+        <h1>Ask anything. Jane will handle it.</h1>
         <p>One private interface to the world's best AI models. Jane automatically chooses the right intelligence for quality, price, speed and privacy.</p>
         <div class="hero-grid">
           <button class="hero-card" data-tool-target="researchButton"><strong>◎ Research the web</strong><small>Deep Research</small></button>
@@ -312,11 +394,12 @@
             <label class="tool privacy-toggle"><input id="privacyToggle" type="checkbox" checked /> local privacy</label>
             <label class="tool privacy-toggle"><input id="vaultToggle" type="checkbox" /> use Vault</label>
           </div>
-          <button class="send" id="send">Send</button>
+          <div class="composer-right"><button class="model-label" type="button" onclick="document.getElementById('cleanSettingsButton').click()" title="Chat controls">Auto routing <svg viewBox="0 0 10 6" aria-hidden="true"><path d="m1 1 4 4 4-4" fill="none" stroke="currentColor"/></svg></button><button class="paperclip" type="button" aria-label="Attach a file" onclick="document.getElementById('fileInput').click()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 13 7-7a3 3 0 0 1 4 4l-9 9a5 5 0 0 1-7-7l9-9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><button class="send" id="send" aria-label="Send message">Send</button></div>
         </div>
       </div>
       <div class="disclaimer">Prompts are processed offchain. Local history is not uploaded by Jane.</div>
     </div>
+    <footer class="design-proof"><p>One interface. The world’s best AI.</p><div><span>Research</span><span>Create</span><span>Code</span></div></footer>
   </main>
 
   <aside class="inspector">
