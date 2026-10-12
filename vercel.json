@@ -11,10 +11,6 @@
       "destination": "/jane.html"
     },
     {
-      "source": "/clearing",
-      "destination": "/clearing/index.html"
-    },
-    {
       "source": "/api/ai/health",
       "destination": "/api/ai-health"
     },
@@ -76,5 +72,17 @@
     "api/conversations.ts": {
       "maxDuration": 30
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/clearing",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/clearing/:path*",
+      "destination": "/",
+      "permanent": false
+    }
+  ]
 }
