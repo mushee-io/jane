@@ -103,9 +103,15 @@
     .studio-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.studio-card{border:1px solid var(--line);background:#0c0f14;border-radius:13px;padding:13px}
     .studio-image{display:block;width:100%;max-height:560px;object-fit:contain;border-radius:12px;border:1px solid var(--line);background:#090b0f}
     .studio-video{display:block;width:100%;max-height:560px;border-radius:12px;border:1px solid var(--line);background:#000}
+    .studio-audio{display:block;width:100%;margin-top:10px}
+    .studio-transcript{border:1px solid var(--line);background:#0b0e13;border-radius:12px;padding:12px;white-space:pre-wrap;line-height:1.55}
     .studio-result-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
     .studio-video-options{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
     .studio-video-options.show{display:grid}
+    .studio-audio-options{display:none;grid-template-columns:160px minmax(0,1fr);gap:8px}
+    .studio-audio-options.show{display:grid}
+    .studio-media-file{display:none}
+    .studio-media-file.show{display:block}
     @media(max-width:620px){.studio-video-options{grid-template-columns:1fr}}
     .studio-card strong{display:block;margin-bottom:6px}.studio-card small{color:#7e8794;line-height:1.4}.studio-output{white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.5;color:#b7bec9;max-height:300px;overflow:auto}
     .studio-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.studio-tabs button{border:1px solid var(--line);background:#12161d;color:#9da5b2;border-radius:9px;padding:7px 9px}.studio-tabs button.active{background:var(--green);color:#080a0b;border-color:var(--green);font-weight:700}
@@ -455,10 +461,15 @@
         <option value="3:4">3:4</option>
       </select>
     </div>
+    <div class="studio-audio-options" id="studioAudioOptions">
+      <input class="policy-input" id="studioAudioDuration" type="number" min="1" max="190" value="20" placeholder="Seconds" />
+      <div class="route-sub" style="align-self:center">Music defaults to 20s. Sound effects are capped at 22s.</div>
+    </div>
     <textarea class="policy-input" id="studioPrompt" style="min-height:110px" placeholder="Describe what you want Jane to create..."></textarea>
     <input class="policy-input" id="studioInputUrl" placeholder="Optional input URL" />
-    <div class="vault-actions"><button class="primary" id="studioGenerate">Route + create</button><button id="studioVoiceLive" style="display:none">Start realtime voice</button></div>
-    <audio id="studioVoiceAudio" autoplay></audio>
+    <input class="policy-input studio-media-file" id="studioMediaFile" type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.webm" />
+    <div class="vault-actions"><button class="primary" id="studioGenerate">Route + create</button><button id="studioVoiceLive" style="display:none">Start voice beta</button></div>
+    <audio id="studioVoiceAudio" class="studio-audio" controls style="display:none"></audio>
     <div class="panel" style="margin-top:14px"><div class="panel-title">Result</div><div id="studioOutput" class="studio-output">Waiting for a creation request.</div></div>
   </div>
 </div>
@@ -512,6 +523,9 @@
     characterName: null,
     installPrompt: null,
     voiceConnection: null,
+    voiceRecorder: null,
+    voiceStream: null,
+    voiceChunks: [],
     attachedImage: null,
     attachedFileName: "",
     systemPrompt: "",
@@ -1354,7 +1368,11 @@
     var select=el("studioOperation");select.innerHTML="";
     el("studioVoiceLive").style.display=modality==="speech"?"inline-block":"none";
     el("studioVideoOptions").classList.toggle("show",modality==="video");
-    el("studioInputUrl").placeholder=modality==="video"?"Image URL for image-to-video (optional for text-to-video)":"Optional input URL";
+    el("studioAudioOptions").classList.toggle("show",modality==="audio");
+    el("studioMediaFile").classList.toggle("show",modality==="audio"||modality==="speech");
+    el("studioInputUrl").placeholder=modality==="video"
+      ?"Image URL for image-to-video (optional for text-to-video)"
+      :(modality==="audio"||modality==="speech"?"Optional audio URL":"Optional input URL");
     (operationMap[modality]||[]).forEach(function(item){
       var option=document.createElement("option");option.value=item[0];option.textContent=item[1];select.appendChild(option);
     });
@@ -1364,36 +1382,65 @@
 
   el("studioButton").onclick=function(){openModal("studioModal");};
   el("studioClose").onclick=function(){closeModal("studioModal");};
+  function fileAsDataUrl(file){
+    return new Promise(function(resolve,reject){
+      var reader=new FileReader();
+      reader.onload=function(){resolve(String(reader.result||""));};
+      reader.onerror=function(){reject(reader.error||new Error("File read failed"));};
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function runVoiceBeta(audioDataUrl){
+    var output=el("studioOutput");
+    output.textContent="Transcribing → thinking → speaking…";
+    var response=await fetch("/api/media/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
+      modality:"speech",operation:"speech-to-speech",inputBase64:audioDataUrl,
+      privacy:state.mode==="confidential"?"confidential":state.mode==="private"?"private":"standard"
+    })});
+    var data=await response.json();
+    if(!response.ok)throw new Error(data.error||"Voice beta failed.");
+    renderStudioMedia(data);
+  }
+
   el("studioVoiceLive").onclick=async function(){
     var button=this;
-    if(state.voiceConnection){
-      state.voiceConnection.stop();
-      state.voiceConnection=null;
-      button.textContent="Start realtime voice";
-      el("studioOutput").textContent="Realtime voice stopped.";
+    if(state.voiceRecorder&&state.voiceRecorder.state==="recording"){
+      button.disabled=true;button.textContent="Processing…";
+      state.voiceRecorder.stop();
       return;
     }
-    button.disabled=true;
-    button.textContent="Connecting…";
+    if(state.mode==="private"||state.mode==="confidential"){
+      el("studioOutput").textContent="Voice beta currently uses the standard fal.ai route. Switch to Auto/Fast/Reason/Code until a private voice provider is configured.";
+      return;
+    }
     try{
-      var response=await fetch("/api/voice/session",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
-        voice:"auto",
-        mode:state.mode==="confidential"?"confidential":state.mode==="private"?"private":"standard",
-        instructions:el("studioPrompt").value.trim()||"Be concise and helpful."
-      })});
-      var data=await response.json();
-      if(!response.ok)throw new Error(data.error||"Voice session failed");
-      if(!window.JaneVoice)throw new Error("Voice client unavailable");
-      state.voiceConnection=await window.JaneVoice.start(data.session,function(stream){
-        el("studioVoiceAudio").srcObject=stream;
-      });
-      button.textContent="Stop realtime voice";
-      el("studioOutput").textContent="Realtime voice connected through "+(data.provider||"configured provider")+".";
+      if(!navigator.mediaDevices||!window.MediaRecorder)throw new Error("Microphone recording is not supported in this browser.");
+      state.voiceStream=await navigator.mediaDevices.getUserMedia({audio:true});
+      state.voiceChunks=[];
+      state.voiceRecorder=new MediaRecorder(state.voiceStream);
+      state.voiceRecorder.ondataavailable=function(event){if(event.data&&event.data.size)state.voiceChunks.push(event.data);};
+      state.voiceRecorder.onstop=async function(){
+        try{
+          var blob=new Blob(state.voiceChunks,{type:state.voiceRecorder.mimeType||"audio/webm"});
+          var dataUrl=await fileAsDataUrl(blob);
+          await runVoiceBeta(dataUrl);
+        }catch(error){
+          el("studioOutput").textContent=error.message||"Voice beta failed.";
+        }finally{
+          if(state.voiceStream)state.voiceStream.getTracks().forEach(function(track){track.stop();});
+          state.voiceStream=null;state.voiceRecorder=null;state.voiceChunks=[];
+          button.disabled=false;button.textContent="Start voice beta";
+        }
+      };
+      state.voiceRecorder.start();
+      button.textContent="Stop & ask";
+      el("studioOutput").textContent="Listening… speak naturally, then press “Stop & ask”.";
     }catch(error){
-      el("studioOutput").textContent=error.message||"Realtime voice failed.";
-      button.textContent="Start realtime voice";
-    }finally{
-      button.disabled=false;
+      if(state.voiceStream)state.voiceStream.getTracks().forEach(function(track){track.stop();});
+      state.voiceStream=null;state.voiceRecorder=null;
+      button.disabled=false;button.textContent="Start voice beta";
+      el("studioOutput").textContent=error.message||"Voice beta failed.";
     }
   };
 
@@ -1420,23 +1467,43 @@
       return;
     }
 
+    var audioInfo=data.output&&data.output.audio?data.output.audio:null;
+    var audioUrl=typeof audioInfo==="string"?audioInfo:(audioInfo&&audioInfo.url?audioInfo.url:null);
+    if(data.output&&data.output.transcript){
+      var transcript=document.createElement("div");transcript.className="studio-transcript";
+      transcript.innerHTML="<strong>You:</strong> "+escapeHtml(data.output.transcript)+(data.output.answer?"<br><br><strong>Jane:</strong> "+escapeHtml(data.output.answer):"");
+      output.appendChild(transcript);
+    }else if(data.output&&data.output.output&&typeof data.output.output==="string"){
+      var textResult=document.createElement("div");textResult.className="studio-transcript";textResult.textContent=data.output.output;output.appendChild(textResult);
+    }
+
+    if(audioUrl){
+      var audio=document.createElement("audio");audio.className="studio-audio";audio.src=audioUrl;audio.controls=true;audio.autoplay=state.studioModality==="speech";output.appendChild(audio);
+      var audioMeta=document.createElement("div");audioMeta.className="studio-result-meta";
+      audioMeta.innerHTML='<span class="chip">'+escapeHtml(data.model||"audio")+'</span><span class="chip">'+escapeHtml(data.provider||"provider")+'</span>';
+      output.appendChild(audioMeta);
+      var audioLink=document.createElement("a");audioLink.href=audioUrl;audioLink.target="_blank";audioLink.rel="noopener noreferrer";audioLink.className="tool";audioLink.style.display="inline-block";audioLink.style.marginTop="10px";audioLink.textContent="Open audio";output.appendChild(audioLink);
+      return;
+    }
+
+    if(output.childNodes.length)return;
     output.textContent=JSON.stringify(data,null,2);
   }
 
-  async function pollStudioVideo(model,requestId){
+  async function pollStudioJob(model,requestId,label){
     var output=el("studioOutput");
     for(var attempt=0;attempt<90;attempt++){
-      output.textContent="Jane is generating your video… "+(attempt<2?"queued":"processing")+" · "+Math.min(99,Math.max(3,attempt*2))+"%";
+      output.textContent="Jane is generating your "+label+"… "+(attempt<2?"queued":"processing")+" · "+Math.min(99,Math.max(3,attempt*2))+"%";
       await new Promise(function(resolve){setTimeout(resolve,4000);});
       var response=await fetch("/api/media/status",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({model:model,requestId:requestId})});
       var data=await response.json();
-      if(!response.ok)throw new Error(data.error||"Video status failed.");
+      if(!response.ok)throw new Error(data.error||"Media status failed.");
       if(data.status==="completed"){
         renderStudioMedia(data);
         return data;
       }
     }
-    throw new Error("Video is still processing. Try again in a moment.");
+    throw new Error("Generation is still processing. Try again in a moment.");
   }
 
   el("studioGenerate").onclick=async function(){
@@ -1447,16 +1514,20 @@
         inputUrl:el("studioInputUrl").value.trim()||undefined,
         privacy:state.mode==="confidential"?"confidential":state.mode==="private"?"private":"standard"
       };
+      var mediaFile=el("studioMediaFile").files&&el("studioMediaFile").files[0];
+      if(mediaFile)payload.inputBase64=await fileAsDataUrl(mediaFile);
       if(state.studioModality==="video"){
         payload.durationSeconds=Number(el("studioVideoDuration").value||5);
         payload.metadata={resolution:el("studioVideoResolution").value,aspectRatio:el("studioVideoAspect").value};
       }
+      if(state.studioModality==="audio")payload.durationSeconds=Number(el("studioAudioDuration").value||20);
       var response=await fetch("/api/media/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
       var data=await response.json();if(!response.ok)throw new Error(data.error||"Creator request failed.");
-      if(state.studioModality==="video"&&data.status==="queued"&&data.requestId){
+      if(data.status==="queued"&&data.requestId){
         button.textContent="Generating…";
-        el("studioOutput").textContent="Video queued on "+(data.model||"fal")+"…";
-        await pollStudioVideo(data.model,data.requestId);
+        var label=state.studioModality==="video"?"video":"audio";
+        el("studioOutput").textContent=label.charAt(0).toUpperCase()+label.slice(1)+" queued on "+(data.model||"fal")+"…";
+        await pollStudioJob(data.model,data.requestId,label);
       }else{
         renderStudioMedia(data);
       }
