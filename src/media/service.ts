@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { fal } from "@fal-ai/client";
 import type { JaneModality } from "../catalog/unified.js";
 
 export interface MediaModel {
@@ -31,15 +32,52 @@ export interface MediaRequest {
   metadata?: Record<string, unknown>;
 }
 
+function nativeFalModels(): MediaModel[] {
+  if (!process.env.FAL_KEY) return [];
+  return [
+    {
+      id: "fal-flux-schnell",
+      provider: "fal",
+      label: "FLUX.1 Schnell",
+      modality: "image",
+      operations: ["text-to-image"],
+      endpoint: process.env.FAL_IMAGE_MODEL ?? "fal-ai/flux/schnell",
+      apiKeyEnv: "FAL_KEY",
+      qualityScore: 0.84,
+      latencyScore: 0.96,
+      privacyScore: 0.60,
+      zeroRetention: false,
+      configured: true
+    },
+    {
+      id: "fal-flux-dev-edit",
+      provider: "fal",
+      label: "FLUX.1 Dev Image Edit",
+      modality: "image",
+      operations: ["image-edit"],
+      endpoint: process.env.FAL_IMAGE_EDIT_MODEL ?? "fal-ai/flux/dev/image-to-image",
+      apiKeyEnv: "FAL_KEY",
+      qualityScore: 0.89,
+      latencyScore: 0.78,
+      privacyScore: 0.60,
+      zeroRetention: false,
+      configured: true
+    }
+  ];
+}
+
 function models(): MediaModel[] {
   const raw = process.env.JANE_MEDIA_MODELS_JSON;
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as MediaModel[];
-    return Array.isArray(parsed) ? parsed.filter((model) => model?.id && model?.endpoint) : [];
-  } catch {
-    return [];
+  let configured: MediaModel[] = [];
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as MediaModel[];
+      configured = Array.isArray(parsed) ? parsed.filter((model) => model?.id && model?.endpoint) : [];
+    } catch {
+      configured = [];
+    }
   }
+  return [...nativeFalModels(), ...configured];
 }
 
 function score(model: MediaModel, request: MediaRequest): number {
@@ -78,6 +116,48 @@ export class JaneMediaService {
     const model = route.selected.model;
     const apiKey = model.apiKeyEnv ? process.env[model.apiKeyEnv] : undefined;
     if (model.apiKeyEnv && !apiKey) throw new Error("MEDIA_PROVIDER_API_KEY_NOT_CONFIGURED");
+
+    if (model.provider === "fal") {
+      if (!process.env.FAL_KEY) throw new Error("MEDIA_PROVIDER_API_KEY_NOT_CONFIGURED");
+      fal.config({ credentials: process.env.FAL_KEY });
+
+      const baseInput: Record<string, unknown> = {
+        prompt: request.prompt,
+        num_images: 1,
+        enable_safety_checker: true,
+        output_format: request.format === "png" ? "png" : "jpeg"
+      };
+      const requestedSize = request.metadata?.size;
+      if (typeof requestedSize === "string") baseInput.image_size = requestedSize;
+
+      if (request.operation === "image-edit") {
+        const imageUrl = request.inputUrl ?? request.inputBase64;
+        if (!imageUrl) throw new Error("IMAGE_INPUT_REQUIRED");
+        baseInput.image_url = imageUrl;
+      }
+
+      const result = await fal.subscribe(model.endpoint, {
+        input: baseInput
+      });
+      const body = (result.data ?? {}) as Record<string, unknown>;
+
+      return {
+        id:`media_${randomUUID().replace(/-/g,"")}`,
+        modality:request.modality,
+        operation:request.operation,
+        provider:model.provider,
+        model:model.id,
+        estimatedCostUsd:model.pricePerGeneration ?? null,
+        routeScore:Number(route.selected.score.toFixed(4)),
+        alternatives:route.alternatives.map((item) => ({
+          id:item.model.id,
+          provider:item.model.provider,
+          estimatedCostUsd:item.model.pricePerGeneration ?? null
+        })),
+        requestId: result.requestId,
+        output: body
+      };
+    }
 
     const controller = new AbortController();
     const timeout = Number(process.env.JANE_MEDIA_TIMEOUT_MS ?? 120_000);
