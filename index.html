@@ -2,196 +2,123 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#08090b" />
-  <title>Jane — private AI & clearing house</title>
-  <meta name="description" content="Jane is Mushee’s AI and clearing platform: Jane private multi-model intelligence and 3maryjane cross-protocol clearing." />
-  <style>
-    :root{
-      --bg:#08090b;--panel:#101319;--panel2:#151922;--line:#252a34;--text:#f6f7f9;--muted:#8d95a3;
-      --green:#b7ff4a;--purple:#9d7cff;--shadow:0 30px 90px rgba(0,0,0,.38)
-    }
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{
-      margin:0;background:
-      radial-gradient(circle at 12% -5%,rgba(183,255,74,.10),transparent 27%),
-      radial-gradient(circle at 92% 18%,rgba(157,124,255,.09),transparent 28%),
-      var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      letter-spacing:-.015em
-    }
-    a{color:inherit}button,a{font:inherit}.wrap{width:min(1180px,calc(100% - 40px));margin:0 auto}
-    nav{height:72px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;
-      background:rgba(8,9,11,.78);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.05)}
-    .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-size:19px;font-weight:800;letter-spacing:-.055em}
-    .brand i{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 24px rgba(183,255,74,.75)}
-    .brand small{font-size:10px;font-weight:600;letter-spacing:.08em;color:#68717f;border:1px solid var(--line);padding:4px 6px;border-radius:999px}
-    .navlinks{display:flex;align-items:center;gap:8px}.navlinks a{text-decoration:none;color:#959dab;font-size:13px;padding:9px 10px;border-radius:9px}
-    .navlinks a:hover{color:#fff;background:#12151b}.navlinks .primary{color:#090b0d;background:var(--green);font-weight:760;padding:10px 14px}
-    .hero{min-height:78vh;display:flex;align-items:center;padding:90px 0 70px}
-    .eyebrow{display:inline-flex;align-items:center;gap:8px;color:#9aa2ae;font-size:12px;text-transform:uppercase;letter-spacing:.11em;margin-bottom:22px}
-    .eyebrow span{width:7px;height:7px;border-radius:50%;background:var(--green)}
-    h1{font-size:clamp(58px,9.3vw,126px);line-height:.84;letter-spacing:-.085em;margin:0;max-width:1050px}
-    h1 em{font-style:normal;color:var(--green)}h1 .purple{color:var(--purple)}
-    .hero-copy{display:flex;justify-content:space-between;gap:30px;align-items:flex-end;margin-top:38px}
-    .hero-copy p{max-width:650px;color:#9aa1ae;font-size:18px;line-height:1.55;margin:0}
-    .hero-actions{display:flex;gap:9px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border-radius:11px;padding:12px 15px;border:1px solid var(--line);background:#12151b;color:#eef1f5;font-size:13px;font-weight:680}
-    .btn:hover{border-color:#3a424f}.btn.green{background:var(--green);color:#080a0b;border-color:var(--green)}
-    .section{padding:74px 0;border-top:1px solid rgba(255,255,255,.05)}.section-head{display:flex;justify-content:space-between;gap:28px;align-items:flex-end;margin-bottom:26px}
-    .kicker{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#68717e;margin-bottom:9px}.section h2{font-size:clamp(32px,5vw,58px);letter-spacing:-.06em;line-height:.96;margin:0}
-    .section-head p{max-width:480px;color:#858e9b;line-height:1.5;margin:0}
-    .products{display:grid;grid-template-columns:1.08fr .92fr;gap:14px}
-    .product{position:relative;overflow:hidden;min-height:410px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(145deg,#11141a,#0c0e12);padding:30px;box-shadow:var(--shadow)}
-    .product:after{content:"";position:absolute;width:300px;height:300px;border-radius:50%;filter:blur(20px);opacity:.12;right:-90px;top:-90px;background:var(--green)}
-    .product.clearing:after{background:var(--purple)}.tag{display:inline-flex;padding:6px 8px;border:1px solid #303744;border-radius:999px;color:#8f98a6;font-size:10px;text-transform:uppercase;letter-spacing:.1em}
-    .product h3{font-size:clamp(38px,5vw,64px);line-height:.92;letter-spacing:-.07em;margin:56px 0 13px;max-width:540px}
-    .product p{color:#9098a5;max-width:560px;line-height:1.55;font-size:15px}.product-bottom{position:absolute;left:30px;right:30px;bottom:28px;display:flex;justify-content:space-between;align-items:center;gap:16px}
-    .status{font-size:11px;color:#7c8491}.status b{color:var(--green);font-weight:600}.clearing .status b{color:var(--purple)}
-    .cap-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.cap{border:1px solid var(--line);background:#0e1116;border-radius:16px;padding:18px;min-height:140px}.cap strong{display:block;font-size:14px;margin-bottom:10px}.cap p{color:#7f8896;font-size:12px;line-height:1.5;margin:0}
-    .clearing-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.clearing-visual{min-height:390px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(145deg,rgba(157,124,255,.08),#0c0f14);padding:24px;display:flex;flex-direction:column;justify-content:space-between}
-    .nodes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.node{border:1px solid #2a2f3a;border-radius:12px;background:#11151b;padding:13px}.node small{color:#737d8b}.node strong{display:block;margin-top:5px;font-size:13px}
-    .flow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;color:#858e9c;font-size:11px}.flow span{border:1px solid #303642;background:#12161d;border-radius:999px;padding:8px 10px}.flow i{color:#596270;font-style:normal}
-    .clearing-copy{border:1px solid var(--line);border-radius:24px;padding:30px;background:#0e1116}.clearing-copy h3{font-size:34px;letter-spacing:-.05em;margin:0 0 15px}.clearing-copy p{color:#89929f;line-height:1.6}.bullets{display:grid;gap:8px;margin:22px 0}.bullet{display:flex;gap:10px;align-items:center;color:#b8bec8;font-size:13px}.bullet i{width:6px;height:6px;border-radius:50%;background:var(--purple)}
-    .dev{display:grid;grid-template-columns:1fr 1fr;gap:14px}.code{border:1px solid var(--line);background:#0b0e12;border-radius:18px;padding:22px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#aeb6c2;line-height:1.7;overflow:auto}.code .g{color:var(--green)}
-    footer{padding:40px 0 60px;border-top:1px solid rgba(255,255,255,.05);color:#68717e;font-size:12px}.footer-row{display:flex;justify-content:space-between;gap:20px;align-items:center}
-    @media(max-width:900px){.hero-copy,.section-head{align-items:flex-start;flex-direction:column}.products,.clearing-grid,.dev{grid-template-columns:1fr}.cap-grid{grid-template-columns:1fr 1fr}.product{min-height:360px}.navlinks a.hide{display:none}}
-    @media(max-width:560px){.wrap{width:min(100% - 24px,1180px)}nav{height:64px}.navlinks a:not(.primary){display:none}.hero{padding-top:58px;min-height:auto}.hero-copy{margin-top:26px}.hero-copy p{font-size:16px}.cap-grid{grid-template-columns:1fr}.product{padding:22px}.product-bottom{left:22px;right:22px}.nodes{grid-template-columns:1fr}.footer-row{align-items:flex-start;flex-direction:column}}
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <title>Intelligence Designed To Evolve</title>
+  <meta name="description" content="Intelligence designed to evolve — modular AI for production." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://db.onlinewebfonts.com/c/8cb707a9b8a73f8a7403336b861c3074?family=BubbledotICG-FinePos" rel="stylesheet" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <nav>
-    <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
-      <a class="brand" href="/"><i></i><span>Jane</span><small>by Mushee</small></a>
-      <div class="navlinks">
-        <a class="hide" href="#products">Products</a>
-        <a class="hide" href="#clearing">Clearing</a>
-        <a class="hide" href="#developers">Developers</a>
-        <a class="hide" href="/jane#settings">Settings</a>
-        <a class="primary" href="/jane">Explore Jane →</a>
-      </div>
+  <div class="bg" aria-hidden="true">
+    <video class="bg-video" autoplay muted loop playsinline>
+      <source
+        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_012548_ef22562c-c0ae-4816-ad9d-f8922af4e6a7.mp4"
+        type="video/mp4"
+      />
+    </video>
+  </div>
+
+  <div class="page">
+    <header class="site-header">
+      <a class="brand-mark" href="/" aria-label="Home">
+        <img src="/assets/logo.webp" alt="" width="52" height="52" />
+      </a>
+
+      <nav class="nav-pill desktop-nav" aria-label="Primary">
+        <a class="active" href="/" aria-current="page">Home</a>
+        <a href="/jane">Product</a>
+        <a href="#case-studies">Case Studies</a>
+        <a href="#contact">Contact</a>
+      </nav>
+
+      <a class="sign-in desktop-sign-in" href="/jane">Sign in</a>
+
+      <button
+        class="menu-toggle"
+        type="button"
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="mobileMenu"
+      >
+        <span></span><span></span><span></span>
+      </button>
+    </header>
+
+    <div class="mobile-menu" id="mobileMenu" hidden>
+      <button class="mobile-overlay" type="button" aria-label="Close menu"></button>
+      <nav class="mobile-sheet" aria-label="Mobile primary">
+        <a class="active" href="/" aria-current="page">Home</a>
+        <a href="/jane">Product</a>
+        <a href="#case-studies">Case Studies</a>
+        <a href="#contact">Contact</a>
+        <a class="mobile-sign-in" href="/jane">Sign in</a>
+      </nav>
     </div>
-  </nav>
 
-  <main>
-    <section class="hero">
-      <div class="wrap">
-        <div class="eyebrow"><span></span> One home for intelligence and execution</div>
-        <h1>Meet <em>Jane AI.</em><br/>Meet <span class="purple">3maryjane.</span></h1>
-        <div class="hero-copy">
-          <p>Jane is no longer one crowded interface. The homepage gives each system its own place: private multi-model AI through Jane, and cross-protocol clearing through 3maryjane.</p>
-          <div class="hero-actions">
-            <a class="btn green" href="/jane">Explore Jane AI</a>
-            <a class="btn" href="/clearing">Explore 3maryjane</a>
+    <main class="hero">
+      <div class="hero-inner">
+        <div class="trust-row anim" style="--d: .05s">
+          <div class="trust-avatars" aria-hidden="true">
+            <span class="trust-avatar a1"><span><i class="fa-brands fa-microsoft"></i></span></span>
+            <span class="trust-avatar a2"><span><i class="fa-brands fa-amazon"></i></span></span>
+            <span class="trust-avatar a3"><span><i class="fa-brands fa-google"></i></span></span>
           </div>
+          <div class="trust-pill">Trusted by 2000+ Enterprises</div>
         </div>
+
+        <h1 class="headline" aria-label="Intelligence Designed To Evolve">
+          <span class="headline-line line-1">Intelligence</span>
+          <span class="headline-line line-2">Designed To Evolve</span>
+        </h1>
+
+        <p class="subhead anim" style="--d: .28s">
+          Build applications that reason, adapt and collaborate using a modular<br class="subhead-break" />
+          AI platform designed for production.
+        </p>
+
+        <a class="cta anim" style="--d: .4s" href="/jane">Get Started</a>
       </div>
-    </section>
+    </main>
 
-    <section class="section" id="products">
-      <div class="wrap">
-        <div class="section-head">
-          <div><div class="kicker">Products</div><h2>Two systems.<br/>Separate rooms.</h2></div>
-          <p>Each product now has a focused experience instead of putting every control into one permanent sidebar.</p>
-        </div>
-        <div class="products">
-          <article class="product">
-            <span class="tag">Private intelligence</span>
-            <h3>Jane<br/>AI</h3>
-            <p>Ask anything. Jane chooses the right model using task quality, price, speed, privacy and observed reliability. Advanced tools stay one click away instead of covering the chat.</p>
-            <div class="product-bottom">
-              <span class="status"><b>●</b> AI workspace</span>
-              <a class="btn green" href="/jane">Open Jane →</a>
-            </div>
-          </article>
-          <article class="product clearing">
-            <span class="tag">Monad clearing network</span>
-            <h3>3maryjane<br/>Clearing</h3>
-            <p>One account across multiple Monad protocols with unified margin, risk, routing, automation, liquidity and execution.</p>
-            <div class="product-bottom">
-              <span class="status"><b>●</b> Monad testnet core live</span>
-              <a class="btn" href="/clearing">Open clearing house →</a>
-            </div>
-          </article>
-        </div>
+    <footer class="stats" aria-label="Platform statistics">
+      <div class="stat anim" style="--d: .5s">
+        <div class="stat-icon" aria-hidden="true">&lt;</div>
+        <div class="stat-value" data-target="120" data-suffix="ms" data-decimals="0">0ms</div>
+        <div class="stat-label">Inference Time</div>
       </div>
-    </section>
 
-    <section class="section">
-      <div class="wrap">
-        <div class="section-head">
-          <div><div class="kicker">Jane AI</div><h2>Simple outside.<br/>Powerful underneath.</h2></div>
-          <p>The AI screen is now conversation-first. Research, creator tools, Arena, agents, Vault, network and settings are opened only when you need them.</p>
-        </div>
-        <div class="cap-grid">
-          <div class="cap"><strong>Auto Router</strong><p>Automatically chooses intelligence by quality, cost, latency, privacy and real outcome history.</p></div>
-          <div class="cap"><strong>Private by design</strong><p>Redacts sensitive data locally, minimizes context and supports private/confidential routes.</p></div>
-          <div class="cap"><strong>Creator + Research</strong><p>Image, video, voice, documents, web research and X adapters live behind Explore.</p></div>
-          <div class="cap"><strong>Proof + economics</strong><p>Privacy receipts, price savings, spending policies and Monad settlement remain available without cluttering the chat.</p></div>
-        </div>
+      <div class="stat anim" style="--d: .58s">
+        <div class="stat-icon" aria-hidden="true">%</div>
+        <div class="stat-value" data-target="99.99" data-suffix="%" data-decimals="2">0.00%</div>
+        <div class="stat-label">Platform Uptime</div>
       </div>
-    </section>
 
-    <section class="section" id="clearing">
-      <div class="wrap">
-        <div class="section-head">
-          <div><div class="kicker">3maryjane</div><h2>The clearing network<br/>gets its own home.</h2></div>
-          <p>Instead of mixing clearing controls into the AI sidebar, the clearing layer is presented as a separate Jane product with its own risk and execution story.</p>
-        </div>
-        <div class="clearing-grid">
-          <div class="clearing-visual">
-            <div class="nodes">
-              <div class="node"><small>Account</small><strong>User-owned clearing</strong></div>
-              <div class="node"><small>Risk</small><strong>Portfolio margin</strong></div>
-              <div class="node"><small>Execution</small><strong>Monad adapters</strong></div>
-              <div class="node"><small>Venue</small><strong>Perpl</strong></div>
-              <div class="node"><small>Credit</small><strong>Hashed</strong></div>
-              <div class="node"><small>Collateral</small><strong>Free balance</strong></div>
-            </div>
-            <div class="flow"><span>Owner wallet</span><i>→</i><span>3maryjane account</span><i>→</i><span>Risk engine</span><i>→</i><span>Solver</span><i>→</i><span>Execution</span></div>
-          </div>
-          <div class="clearing-copy">
-            <span class="tag">Monad testnet · 10143</span>
-            <h3>Unified capital and risk.</h3>
-            <p>3maryjane keeps protocol custody rules intact while normalizing positions into one owner-defined risk surface.</p>
-            <div class="bullets">
-              <div class="bullet"><i></i> Unified portfolio ledger</div>
-              <div class="bullet"><i></i> Cross-protocol exposure netting</div>
-              <div class="bullet"><i></i> Policy-aware execution and withdrawals</div>
-              <div class="bullet"><i></i> Defensive automation without unrestricted custody</div>
-              <div class="bullet"><i></i> Hashed stock-backed credit module</div>
-            </div>
-            <a class="btn" href="/clearing">Open 3maryjane Clearing House →</a>
-          </div>
-        </div>
+      <div class="stat anim" style="--d: .66s">
+        <div class="stat-icon" aria-hidden="true">*</div>
+        <div class="stat-value" data-target="24" data-suffix="/7" data-decimals="0">0/7</div>
+        <div class="stat-label">Autonomous Runtime</div>
       </div>
-    </section>
 
-    <section class="section" id="developers">
-      <div class="wrap">
-        <div class="section-head">
-          <div><div class="kicker">Developers</div><h2>One API.<br/>Every model.</h2></div>
-          <p>Developers can call Jane directly while the router handles model selection, privacy policy, cost and failover.</p>
-        </div>
-        <div class="dev">
-          <div class="code"><span class="g">POST</span> /v1/chat/completions<br/><br/>{<br/>  "model": "jane-auto",<br/>  "messages": [ ... ]<br/>}</div>
-          <div class="code"><span class="g">Jane routes</span><br/>quality → price → privacy → latency<br/><br/><span class="g">Jane returns</span><br/>answer + route + cost + privacy receipt</div>
-        </div>
+      <div class="stat anim" style="--d: .74s">
+        <div class="stat-icon" aria-hidden="true">#</div>
+        <div class="stat-value" data-target="2.4" data-suffix="M" data-decimals="1">0.0M</div>
+        <div class="stat-label">Context Windows</div>
       </div>
-    </section>
-  </main>
+    </footer>
+  </div>
 
-  <footer>
-    <div class="wrap footer-row"><span>Jane by Mushee</span><span id="systemStatus">Checking Jane systems…</span></div>
-  </footer>
-
-  <script>
-    Promise.all([
-      fetch("/api/ai/health").then(function(r){return r.ok?r.json():null}).catch(function(){return null}),
-      fetch("/api/catalog").then(function(r){return r.ok?r.json():null}).catch(function(){return null})
-    ]).then(function(results){
-      var health=results[0],catalog=results[1],parts=[];
-      if(health&&Array.isArray(health.configuredProviders))parts.push(health.configuredProviders.length+" AI providers configured");
-      if(catalog&&catalog.summary&&catalog.summary.models)parts.push(catalog.summary.models+" model routes");
-      document.getElementById("systemStatus").textContent=parts.length?parts.join(" · "):"Jane interface online";
-    });
-  </script>
+  <script src="/main.js" defer></script>
 </body>
 </html>
