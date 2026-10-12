@@ -1396,9 +1396,20 @@
         clientPrivacy:{applied:el("privacyToggle").checked,redactedCount:scan.count,categories:scan.categories}
       })});
       var data=await response.json();if(!response.ok)throw new Error(data.error||"Research failed");
-      var lines=[];if(data.answer)lines.push(data.answer);
-      (data.sources||[]).forEach(function(source,index){lines.push("["+(index+1)+"] "+source.title+"\n"+source.url+(source.snippet?"\n"+source.snippet:""));});
-      el("researchOutput").textContent=lines.join("\n\n")||"No sources returned.";
+      var output=el("researchOutput");output.innerHTML="";
+      if(data.answer){
+        var answer=document.createElement("div");answer.textContent=data.answer;answer.style.whiteSpace="pre-wrap";answer.style.marginBottom="16px";output.appendChild(answer);
+      }
+      (data.sources||[]).forEach(function(source,index){
+        var card=document.createElement("div");card.className="alt";
+        var link=document.createElement("a");link.href=source.url;link.target="_blank";link.rel="noopener noreferrer";link.style.color="inherit";link.style.textDecoration="none";
+        var title=document.createElement("strong");title.textContent="["+(index+1)+"] "+(source.title||source.url);title.style.display="block";title.style.marginBottom="4px";
+        var url=document.createElement("small");url.textContent=source.url;url.style.color="var(--green)";url.style.wordBreak="break-all";
+        link.appendChild(title);link.appendChild(url);card.appendChild(link);
+        if(source.snippet){var snippet=document.createElement("div");snippet.className="route-sub";snippet.style.marginTop="7px";snippet.style.whiteSpace="pre-wrap";snippet.textContent=source.snippet;card.appendChild(snippet);}
+        output.appendChild(card);
+      });
+      if(!data.answer && !(data.sources||[]).length)output.textContent="No sources returned.";
     }catch(error){el("researchOutput").textContent=error.message||"Research failed."}
     finally{button.disabled=false;button.textContent="Research";}
   };
