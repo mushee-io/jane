@@ -39,20 +39,16 @@ export async function proxyNeonAuth(request: Request, action: string) {
     "content-type": request.headers.get("content-type") ?? "application/json"
   };
 
-  // Neon Auth / Better Auth requires an Origin for email auth when the
-  // callback URL is relative. Browser requests normally include it on POST,
-  // but the proxy must explicitly forward it to the Neon Auth service.
-  const origin =
-    request.headers.get("origin") ??
-    (() => {
-      const proto = request.headers.get("x-forwarded-proto") ?? "https";
-      const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-      return host ? `${proto}://${host}` : new URL(request.url).origin;
-    })();
-  headers.origin = origin;
-
-  const referer = request.headers.get("referer");
-  if (referer) headers.referer = referer;
+  // The Jane UI proxies Neon Auth through /api/auth. Better Auth validates
+  // the Origin header against Neon Auth's trusted origins. Vercel can expose an
+  // internal deployment hostname to the function, so using request.url as a
+  // fallback can produce an origin that Neon correctly rejects. Pin the proxy
+  // to Jane's trusted production origin, while still accepting that same origin
+  // when the browser sends it explicitly.
+  const trustedJaneOrigin =
+    (process.env.JANE_PUBLIC_ORIGIN || "https://jane-seven-sooty.vercel.app").replace(/\/$/, "");
+  const incomingOrigin = request.headers.get("origin")?.replace(/\/$/, "");
+  headers.origin = incomingOrigin === trustedJaneOrigin ? incomingOrigin : trustedJaneOrigin;
 
   const cookie = request.headers.get("cookie");
   if (cookie) headers.cookie = cookie;
