@@ -26,7 +26,8 @@
     "zod": "^3.25.76",
     "viem": "^2.37.13",
     "pdf-parse": "^2.4.5",
-    "mammoth": "^1.13.0"
+    "mammoth": "^1.13.0",
+    "@fal-ai/client": "^1.10.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
