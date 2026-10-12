@@ -232,7 +232,7 @@
 :root{--u:min(.06410256vw,.12400794vh);--vu:.09920635vh;--green:#f8b285;--green2:#e88654}
 @supports(height:100dvh){:root{--u:min(.06410256vw,.12400794dvh);--vu:.09920635dvh}}
 body{background:#0a0d12;font-synthesis:none;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision;font-variation-settings:"opsz" 32}
-.stage-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;pointer-events:none}
+.stage-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none}
 .jane-shell-nav{position:absolute;left:calc(225*var(--u));right:calc(225*var(--u));top:calc(41*var(--vu));height:calc(43*var(--u));padding:0;border:0;background:none;backdrop-filter:none}
 .jane-shell-brand{font-size:calc(18.49*var(--u));font-weight:500;letter-spacing:-.0154em;gap:calc(12*var(--u));text-shadow:0 1px 10px #0005}
 .jane-shell-brand i{width:calc(34*var(--u));height:calc(34*var(--u));background:radial-gradient(circle,#151519 0 15%,white 16% 35%,#9c86ce 36%);box-shadow:none}
@@ -241,7 +241,8 @@ body{background:#0a0d12;font-synthesis:none;-webkit-font-smoothing:antialiased;t
 .jane-nav-btn{font-size:calc(15.7*var(--u));color:white;font-weight:400}
 .jane-nav-btn.primary{background:none;border:0}
 #accountButton{width:calc(140*var(--u));height:calc(43*var(--u));border-radius:calc(12*var(--u));background:linear-gradient(#3d3d3f,#1d1d20);box-shadow:inset 0 1px #ffffff1a,0 2px 14px #0005;font-weight:520}
-.app{height:100vh;height:100dvh;display:block;background:none}
+.app{position:relative;z-index:1;height:100vh;height:100dvh;display:block;background:none}
+.sidebar{display:none!important}body.sidebar-open .sidebar{display:flex!important;position:fixed;z-index:60;left:0;top:100px;bottom:0;width:260px}body.conversation-started .sidebar-toggle{display:grid}
 body:not(.conversation-started) .sidebar{display:none!important}
 .main{height:100%;display:block}
 body:not(.conversation-started) .topbar{display:none}
