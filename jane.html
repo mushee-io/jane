@@ -1424,7 +1424,9 @@
   localStorage.setItem("jane_principal",state.principal);
 
   fetch("/api/ai/health").then(function(r){return r.json();}).then(function(d){
-    el("apiStatus").textContent=d.configuredProviders&&d.configuredProviders.length?d.configuredProviders.length+" providers live":"router online · add provider key";
+    el("apiStatus").textContent=d.configuredProviders&&d.configuredProviders.length
+      ? d.configuredProviders.length+" providers live · "+(d.configuredRoutes||d.configuredProviders.length)+" routes"
+      : "router online · add provider key";
     el("networkState").textContent=(d.providerNetwork&&d.providerNetwork.nodes?d.providerNetwork.nodes:0)+" nodes";
     if(d.monad&&d.monad.configured){
       el("monadNetwork").textContent="chain "+d.monad.chainId;
