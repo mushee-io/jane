@@ -121,8 +121,9 @@ export class JaneAIService {
         teamsAdmin: true,
         publicBenchmarks: true
       },
-      configuredProviders: models.filter((model) => model.configured).map((model) => model.provider),
-      availableRoutes: models.map((model) => ({ id: model.id, configured: model.configured })),
+      configuredProviders: [...new Set(models.filter((model) => model.configured).map((model) => model.provider))],
+      configuredRoutes: models.filter((model) => model.configured).length,
+      availableRoutes: models.map((model) => ({ id: model.id, provider: model.provider, model: model.model, configured: model.configured })),
       circuits: this.failover.snapshot(models),
       monad: settlementStatus(),
       agents: { count: this.agents.list().length },
