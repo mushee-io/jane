@@ -37,7 +37,7 @@
 - Video Studio
 - Audio/Music Studio
 - TTS/STT/speech-to-speech + realtime WebRTC voice client
-- privacy-aware Deep Research
+- privacy-aware Deep Research with native Tavily Search + Extract adapter
 - Characters + character chat
 - Jane Arena
 - attestation + browser E2EE confidential-compute interface
@@ -67,7 +67,7 @@ The following require credentials, provider infrastructure, funded wallets, or h
 
 1. Real inference provider API keys.
 2. Image/video/audio/voice provider endpoints and keys.
-3. Search provider endpoint/key.
+3. Search provider credential (Tavily is supported natively with `TAVILY_API_KEY`; generic endpoints remain supported).
 4. A genuine TEE attestation/verifier service and enclave.
 5. Jane-owned GPU inference endpoint.
 6. Monad RPC, funded deployer and real stable settlement token.
