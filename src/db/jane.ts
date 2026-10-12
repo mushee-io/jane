@@ -1,7 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 
 function sql() {
-  const url = process.env.DATABASE_URL;
+  const url = process.env.JANE_DATABASE_URL ?? process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL_NOT_CONFIGURED");
   return neon(url);
 }
