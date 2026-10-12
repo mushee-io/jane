@@ -38,6 +38,22 @@ export async function proxyNeonAuth(request: Request, action: string) {
     accept: "application/json",
     "content-type": request.headers.get("content-type") ?? "application/json"
   };
+
+  // Neon Auth / Better Auth requires an Origin for email auth when the
+  // callback URL is relative. Browser requests normally include it on POST,
+  // but the proxy must explicitly forward it to the Neon Auth service.
+  const origin =
+    request.headers.get("origin") ??
+    (() => {
+      const proto = request.headers.get("x-forwarded-proto") ?? "https";
+      const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+      return host ? `${proto}://${host}` : new URL(request.url).origin;
+    })();
+  headers.origin = origin;
+
+  const referer = request.headers.get("referer");
+  if (referer) headers.referer = referer;
+
   const cookie = request.headers.get("cookie");
   if (cookie) headers.cookie = cookie;
 
