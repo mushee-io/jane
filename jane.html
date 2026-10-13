@@ -274,7 +274,7 @@ body:not(.conversation-started) .disclaimer{display:none}
 .design-proof{position:absolute;top:calc(799*var(--vu));left:0;width:100%;text-align:center;color:white;text-shadow:0 1px 12px #0006}
 .design-proof p{font-size:calc(14.01*var(--u));font-weight:480;letter-spacing:.0065em;margin:0}
 .design-proof div{display:flex;justify-content:center;gap:calc(62*var(--u));margin-top:calc(52.3*var(--vu));font-size:calc(24*var(--u));font-weight:500}
-body.conversation-started .stage-video,body.conversation-started .design-proof{display:none}
+body.conversation-started .design-proof{display:none}
 body.conversation-started{background:#0a0d12}
 body.conversation-started .app{padding-top:100px}
 body.conversation-started .main{display:grid;grid-template-rows:auto minmax(0,1fr) auto}
@@ -308,13 +308,191 @@ body.conversation-started .app{height:100dvh;padding-top:76px}body.conversation-
 @media(prefers-reduced-motion:no-preference){body:not(.conversation-started) .hero h1{animation:jane-focus 1s cubic-bezier(.16,1,.3,1) .3s both}body:not(.conversation-started) .composer{animation:jane-panel .9s cubic-bezier(.16,1,.3,1) .62s both}.design-proof{animation:jane-panel .55s ease 1.08s both}@keyframes jane-focus{from{opacity:0;transform:translateY(14px);filter:blur(6px)}to{opacity:1;transform:none;filter:blur(0)}}@keyframes jane-panel{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:none}}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 
+
+    /* Jane: preserve the cinematic scene while talking, and restore chat history. */
+    body.conversation-started .stage-video{display:block}
+    body .sidebar-toggle{display:grid;flex:none;place-items:center;color:#f4f1f7}
+    body .sidebar-toggle:hover{background:rgba(255,255,255,.12)}
+    body.conversation-started .jane-shell-nav{
+      position:absolute;inset:0 0 auto 0;height:86px;
+      padding:0 clamp(22px,3vw,50px);border-bottom:1px solid rgba(255,255,255,.12);
+      background:linear-gradient(180deg,rgba(12,14,20,.77),rgba(12,14,20,.36));
+      backdrop-filter:blur(20px) saturate(115%);
+    }
+    body:not(.conversation-started).sidebar-open .sidebar{
+      display:flex!important;position:fixed;z-index:60;top:86px;bottom:0;left:0;width:min(280px,86vw)
+    }
+    body.sidebar-open:after{inset:86px 0 0}
+    body.conversation-started .app{
+      height:100vh;height:100dvh;display:grid;
+      grid-template-columns:260px minmax(0,1fr);padding-top:86px;background:transparent
+    }
+    body.conversation-started .sidebar{
+      display:flex!important;position:relative;z-index:2;
+      inset:auto;width:auto;min-width:0;min-height:0;
+      border-right:1px solid rgba(255,255,255,.13);
+      background:rgba(16,18,24,.78);
+      backdrop-filter:blur(24px) saturate(110%);
+      box-shadow:12px 0 34px rgba(0,0,0,.13)
+    }
+    body.conversation-started .sidebar .brand{display:none}
+    body.conversation-started .sidebar .new-chat{
+      border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.09);
+      color:#f6f5f9;border-radius:13px
+    }
+    body.conversation-started .sidebar .new-chat:hover,
+    body.conversation-started .sidebar .history button:hover{background:rgba(255,255,255,.13)}
+    body.conversation-started .sidebar .history button.active{background:rgba(248,178,133,.15);color:#fff}
+    body.conversation-started .sidebar .history button.active:before{background:#f8b285}
+    body.conversation-started.sidebar-collapsed .app{grid-template-columns:minmax(0,1fr)}
+    body.conversation-started.sidebar-collapsed .sidebar{display:none!important}
+    body.conversation-started .main{
+      height:100%;min-width:0;min-height:0;
+      display:grid;grid-template-rows:auto minmax(0,1fr) auto;
+      background:linear-gradient(180deg,rgba(9,11,16,.16),rgba(9,11,16,.28) 48%,rgba(9,11,16,.62))
+    }
+    body.conversation-started .topbar{
+      height:65px;min-height:0;border-bottom:1px solid rgba(255,255,255,.10);
+      background:rgba(13,15,21,.38);backdrop-filter:blur(16px);
+      padding:0 max(20px,calc((100% - 860px)/2))
+    }
+    body.conversation-started .mode{color:#e2e1e6}
+    body.conversation-started .mode:hover{background:rgba(255,255,255,.10);color:white}
+    body.conversation-started .mode.active{
+      background:#f8b285;border-color:#f8b285;color:#17151a;
+      box-shadow:0 3px 12px rgba(0,0,0,.16)
+    }
+    body.conversation-started .status{color:#dadce3}
+    body.conversation-started .chat{
+      overflow-x:hidden;overflow-y:auto;min-height:0;
+      padding:28px max(24px,calc((100% - 860px)/2)) 36px;
+      scrollbar-gutter:stable
+    }
+    body.conversation-started .message{
+      max-width:830px;display:grid;grid-template-columns:38px minmax(0,1fr);
+      gap:14px;margin:0 auto 22px;padding:18px 20px;
+      border-radius:20px;color:#f5f5f8
+    }
+    body.conversation-started .message.assistant{
+      background:rgba(28,29,35,.78);
+      border:1px solid rgba(255,255,255,.14);
+      backdrop-filter:blur(22px) saturate(110%);
+      box-shadow:0 14px 40px rgba(0,0,0,.18)
+    }
+    body.conversation-started .message.user{
+      background:rgba(14,17,24,.44);
+      border:1px solid rgba(255,255,255,.08);
+      backdrop-filter:blur(9px)
+    }
+    body.conversation-started .message .avatar{
+      width:36px;height:36px;border:1px solid rgba(255,255,255,.16);
+      background:rgba(23,25,31,.85);color:#f5f4f8;border-radius:12px
+    }
+    body.conversation-started .message.assistant .avatar{
+      background:#9c86ce;border:3px solid #d5c7f1;
+      border-radius:50%;color:#151519;font-size:15px
+    }
+    body.conversation-started .bubble{
+      min-width:0;padding:2px 0;color:#f1f0f3;
+      font-size:15px;line-height:1.75;overflow-wrap:anywhere;white-space:pre-wrap
+    }
+    body.conversation-started .message.assistant .bubble{white-space:normal}
+    body.conversation-started .bubble p{margin:0 0 14px}
+    body.conversation-started .bubble p:last-child{margin-bottom:0}
+    body.conversation-started .bubble h3{font-size:16px;font-weight:650;line-height:1.4;margin:17px 0 8px}
+    body.conversation-started .bubble h3:first-child{margin-top:0}
+    body.conversation-started .bubble ul,
+    body.conversation-started .bubble ol{padding-left:22px;margin:8px 0 15px}
+    body.conversation-started .bubble li{margin:5px 0}
+    body.conversation-started .bubble pre{
+      max-width:100%;overflow:auto;white-space:pre;
+      padding:15px;border:1px solid rgba(255,255,255,.10);
+      background:rgba(6,8,12,.65);border-radius:12px;margin:12px 0
+    }
+    body.conversation-started .bubble code{
+      background:rgba(255,255,255,.09);padding:2px 5px;
+      border-radius:5px;font-size:.89em;
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace
+    }
+    body.conversation-started .bubble pre code{background:none;padding:0}
+    body.conversation-started .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+    body.conversation-started .chip{
+      background:rgba(9,12,18,.44);border-color:rgba(255,255,255,.13);color:#c1c3cc
+    }
+    body.conversation-started .chip.good{color:#f8b285}
+    body.conversation-started .feedback button{
+      background:rgba(255,255,255,.08);color:#d5d3da;border-color:rgba(255,255,255,.12)
+    }
+    body.conversation-started .composer-wrap{
+      z-index:4;position:relative;left:auto;top:auto;transform:none;width:auto;
+      min-width:0;padding:10px max(24px,calc((100% - 850px)/2)) 20px;
+      background:linear-gradient(180deg,transparent,rgba(9,11,17,.53) 24%,rgba(9,11,17,.73))
+    }
+    body.conversation-started .composer{
+      padding:12px 14px 11px;border-radius:22px;
+      border:1px solid rgba(255,255,255,.19);
+      background:rgba(41,41,43,.90);backdrop-filter:blur(26px) saturate(112%);
+      box-shadow:0 14px 45px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.07)
+    }
+    body.conversation-started .composer textarea{min-height:48px;color:white}
+    body.conversation-started .composer .tool{
+      border:1px solid rgba(255,255,255,.09);
+      background:rgba(255,255,255,.06);color:#d0cdd4
+    }
+    body.conversation-started .composer .tool:hover{background:rgba(255,255,255,.12)}
+    body.conversation-started .composer .send{
+      background:linear-gradient(163deg,#fbbc94,#f49d70 46%,#e88654);
+      color:#161419;font-weight:600
+    }
+    body.conversation-started .composer .model-label{color:#d1cbd0}
+    body.conversation-started .disclaimer{color:#d1cbd2;text-shadow:0 1px 6px black}
+    body.conversation-started .scroll-latest{
+      color:white;background:rgba(30,31,39,.83);
+      border-color:rgba(255,255,255,.17);backdrop-filter:blur(16px)
+    }
+    @media(max-width:900px){
+      body.conversation-started .app{grid-template-columns:minmax(0,1fr)}
+      body.conversation-started .sidebar{display:none!important}
+      body.conversation-started.sidebar-open .sidebar{
+        display:flex!important;position:fixed;z-index:60;
+        left:0;right:auto;top:86px;bottom:0;width:min(290px,86vw);
+        box-shadow:22px 0 55px rgba(0,0,0,.42)
+      }
+      body.conversation-started .topbar{
+        justify-content:flex-start;overflow-x:auto;overflow-y:hidden;
+        height:60px;padding:0 15px;scrollbar-width:none
+      }
+      body.conversation-started .topbar .modes{flex-wrap:nowrap;min-width:max-content}
+      body.conversation-started .topbar .status{display:none}
+      body.conversation-started .chat{padding:18px 14px 24px}
+      body.conversation-started .composer-wrap{padding:9px 14px 15px}
+      body.conversation-started .message{
+        padding:15px 13px;gap:11px;grid-template-columns:32px minmax(0,1fr)
+      }
+      body.conversation-started .message .avatar{width:30px;height:30px;font-size:10px}
+    }
+    @media(max-width:599px){
+      body.conversation-started .app{padding-top:74px}
+      body.conversation-started .jane-shell-nav{height:74px;padding:0 13px}
+      body.conversation-started.sidebar-open .sidebar{top:74px}
+      body.sidebar-open:after{inset:74px 0 0}
+      body.conversation-started .jane-shell-right{gap:3px}
+      body.conversation-started .jane-shell-brand{font-size:18px}
+      body.conversation-started .composer-bottom{flex-wrap:wrap;align-items:center;gap:8px}
+      body.conversation-started .composer .tools{gap:5px;flex-wrap:wrap}
+      body.conversation-started .composer .tool{font-size:10px;padding:7px}
+      body.conversation-started .composer-right{gap:10px;margin-left:auto}
+      body.conversation-started .composer .send{min-width:58px}
+      body.conversation-started .message .bubble{font-size:14px}
+    }
+
   </style>
 </head>
 <body>
 <video class="stage-video" autoplay muted loop playsinline aria-hidden="true" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260826_124724_bc041163-d651-425f-aea3-2acc1efc2c96.mp4"></video>
 <nav class="jane-shell-nav" aria-label="Jane">
   <div class="jane-shell-left">
-    <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Toggle conversation history" title="Conversation history">☰</button>
+    <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Toggle conversation history" aria-controls="historySidebar" aria-expanded="false" title="Conversation history">☰</button>
     <a class="jane-shell-brand" href="/"><i></i><span>Jane</span></a>
     <a class="jane-nav-link secondary" href="/">Home</a>
   </div>
@@ -336,7 +514,7 @@ body.conversation-started .app{height:100dvh;padding-top:76px}body.conversation-
   </div>
 </nav>
 <div class="app">
-  <aside class="sidebar">
+  <aside class="sidebar" id="historySidebar" aria-label="Conversation history">
     <div class="brand"><div class="brandmark"><span class="dot"></span>Jane</div><span class="beta">ALPHA</span></div>
     <button class="new-chat" id="newChat">＋ New chat</button>
     <button class="vault-button" id="vaultButton">◇ Jane Vault <span class="vault-state" id="vaultState">locked</span></button>
@@ -691,19 +869,63 @@ body.conversation-started .app{height:100dvh;padding-top:76px}body.conversation-
   var send = el("send");
 
   function closeSidebarOnMobile(){
-    if(window.innerWidth<=900)document.body.classList.remove("sidebar-open");
+    document.body.classList.remove("sidebar-open");
+    el("sidebarToggle").setAttribute("aria-expanded","false");
   }
 
   el("sidebarToggle").onclick=function(){
-    if(window.innerWidth<=900){
+    if(window.innerWidth<=900 || !document.body.classList.contains("conversation-started")){
       document.body.classList.toggle("sidebar-open");
+      this.setAttribute("aria-expanded",document.body.classList.contains("sidebar-open")?"true":"false");
     }else{
       document.body.classList.toggle("sidebar-collapsed");
       localStorage.setItem("jane_sidebar_collapsed",document.body.classList.contains("sidebar-collapsed")?"1":"0");
+      this.setAttribute("aria-expanded",document.body.classList.contains("sidebar-collapsed")?"false":"true");
     }
   };
-  if(window.innerWidth>900&&localStorage.getItem("jane_sidebar_collapsed")==="1")document.body.classList.add("sidebar-collapsed");
+  /* Start with conversation history visible on desktop; users may still collapse it. */
   window.addEventListener("resize",function(){if(window.innerWidth>900)document.body.classList.remove("sidebar-open");});
+
+  /* Escaped first, then apply a small, safe subset of Markdown to AI responses. */
+  function renderChatMarkdown(value){
+    var lines=escapeHtml(String(value||"")).replace(/\r\n?/g,"\n").split("\n");
+    var out=[],paragraph=[],items=[],listType="",code=[],inCode=false;
+    function inline(s){
+      return s.replace(/\x60([^\x60\n]+)\x60/g,"<code>$1</code>")
+        .replace(/\*\*([^*\n]+)\*\*/g,"<strong>$1</strong>")
+        .replace(/\*([^*\n]+)\*/g,"<em>$1</em>");
+    }
+    function flushParagraph(){
+      if(paragraph.length)out.push("<p>"+paragraph.map(inline).join("<br>")+"</p>");
+      paragraph=[];
+    }
+    function flushList(){
+      if(items.length)out.push("<"+listType+">"+items.map(function(x){return "<li>"+inline(x)+"</li>";}).join("")+"</"+listType+">");
+      items=[];listType="";
+    }
+    function flushCode(){out.push("<pre><code>"+code.join("\n")+"</code></pre>");code=[];}
+    lines.forEach(function(line){
+      if(/^\s*\x60{3}/.test(line)){
+        if(inCode){flushCode();inCode=false;}
+        else{flushParagraph();flushList();inCode=true;}
+        return;
+      }
+      if(inCode){code.push(line);return;}
+      if(!line.trim()){flushParagraph();flushList();return;}
+      var heading=line.match(/^\s*#{1,4}\s+(.+)$/);
+      if(heading){flushParagraph();flushList();out.push("<h3>"+inline(heading[1])+"</h3>");return;}
+      var bullet=line.match(/^\s*[-*]\s+(.+)$/),numbered=line.match(/^\s*\d+\.\s+(.+)$/);
+      if(bullet||numbered){
+        var kind=bullet?"ul":"ol";flushParagraph();
+        if(listType&&listType!==kind)flushList();
+        listType=kind;items.push((bullet||numbered)[1]);return;
+      }
+      flushList();paragraph.push(line);
+    });
+    if(inCode)flushCode();
+    flushParagraph();flushList();
+    return out.join("");
+  }
 
   function escapeHtml(value){
     return String(value).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c];});
@@ -876,11 +1098,11 @@ body.conversation-started .app{height:100dvh;padding-top:76px}body.conversation-
     wrap.className = "message " + role;
     var avatar = document.createElement("div");
     avatar.className = "avatar";
-    avatar.textContent = role === "assistant" ? "33" : "YOU";
+    avatar.textContent = role === "assistant" ? "J" : "YOU";
     var body = document.createElement("div");
     var bubble = document.createElement("div");
     bubble.className = "bubble";
-    bubble.innerHTML = escapeHtml(content);
+    bubble.innerHTML = role === "assistant" ? renderChatMarkdown(content) : escapeHtml(content);
     body.appendChild(bubble);
 
     if(meta){
@@ -1446,7 +1668,8 @@ body.conversation-started .app{height:100dvh;padding-top:76px}body.conversation-
   }
 
   function reset(){
-    document.body.classList.remove("conversation-started");
+    document.body.classList.remove("conversation-started","sidebar-open");
+    el("sidebarToggle").setAttribute("aria-expanded","false");
     state.messages=[];state.currentId=crypto.randomUUID?crypto.randomUUID():String(Date.now());state.privacyMap={};state.serverConversationId=null;
     state.characterId=null;state.characterName=null;promptEl.placeholder="Ask anything. Jane will choose the intelligence...";
     messagesEl.innerHTML="";hero.style.display="block";promptEl.value="";setPrivacy({count:0,categories:[]});
