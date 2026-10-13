@@ -6,6 +6,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=block" rel="stylesheet">
   <meta name="theme-color" content="#08090b" />
   <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/assets/icon.svg?v=4" type="image/svg+xml" />
   <script src="/assets/e2ee.js" defer></script>
   <script src="/assets/voice.js" defer></script>
   <title>Jane — Ask anything</title>
@@ -486,6 +487,23 @@ body.conversation-started .app{height:100dvh;padding-top:76px}body.conversation-
       body.conversation-started .message .bubble{font-size:14px}
     }
 
+
+    /* Jane's supplied brush-script identity */
+    .jane-shell-brand img{
+      display:block;width:calc(72*var(--u));height:calc(47*var(--u));
+      object-fit:contain;filter:invert(1) drop-shadow(0 1px 8px rgba(0,0,0,.4))
+    }
+    .sidebar .brandmark img{
+      display:block;width:70px;height:49px;object-fit:contain;filter:invert(1)
+    }
+    .message.assistant .avatar{background:transparent!important;border:0!important;overflow:hidden;box-shadow:none}
+    .message.assistant .avatar img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%}
+    body.conversation-started .jane-shell-brand img{width:77px;height:58px}
+    @media(max-width:599px){
+      .jane-shell-brand img{width:64px;height:43px}
+      body.conversation-started .jane-shell-brand img{width:65px;height:48px}
+    }
+
   </style>
 </head>
 <body>
@@ -493,7 +511,7 @@ body.conversation-started .app{height:100dvh;padding-top:76px}body.conversation-
 <nav class="jane-shell-nav" aria-label="Jane">
   <div class="jane-shell-left">
     <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Toggle conversation history" aria-controls="historySidebar" aria-expanded="false" title="Conversation history">☰</button>
-    <a class="jane-shell-brand" href="/"><i></i><span>Jane</span></a>
+    <a class="jane-shell-brand" href="/" aria-label="Jane home"><img src="/assets/jane-wordmark.svg" alt="Jane" width="70" height="48" /></a>
     <a class="jane-nav-link secondary" href="/">Home</a>
   </div>
   <div class="jane-shell-right">
@@ -515,7 +533,7 @@ body.conversation-started .app{height:100dvh;padding-top:76px}body.conversation-
 </nav>
 <div class="app">
   <aside class="sidebar" id="historySidebar" aria-label="Conversation history">
-    <div class="brand"><div class="brandmark"><span class="dot"></span>Jane</div><span class="beta">ALPHA</span></div>
+    <div class="brand"><div class="brandmark"><img src="/assets/jane-wordmark.svg" alt="Jane" width="70" height="48" /></div><span class="beta">ALPHA</span></div>
     <button class="new-chat" id="newChat">＋ New chat</button>
     <button class="vault-button" id="vaultButton">◇ Jane Vault <span class="vault-state" id="vaultState">locked</span></button>
     <button class="vault-button" id="networkButton">◎ Network Console <span class="vault-state" id="networkState">loading</span></button>
@@ -1098,7 +1116,11 @@ body.conversation-started .app{height:100dvh;padding-top:76px}body.conversation-
     wrap.className = "message " + role;
     var avatar = document.createElement("div");
     avatar.className = "avatar";
-    avatar.textContent = role === "assistant" ? "J" : "YOU";
+    if(role === "assistant"){
+      var janeMark=document.createElement("img");
+      janeMark.src="/assets/icon.svg";janeMark.alt="Jane";
+      avatar.appendChild(janeMark);
+    }else{avatar.textContent="YOU";}
     var body = document.createElement("div");
     var bubble = document.createElement("div");
     bubble.className = "bubble";

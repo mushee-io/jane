@@ -1,14 +1,23 @@
 {
-  "name":"Jane",
-  "short_name":"Jane",
-  "description":"Private intelligence routing for the internet.",
-  "start_url":"/",
-  "display":"standalone",
-  "background_color":"#08090b",
-  "theme_color":"#08090b",
-  "orientation":"any",
-  "categories":["productivity","business","utilities"],
-  "icons":[
-    {"src":"/assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  "name": "Jane",
+  "short_name": "Jane",
+  "description": "Private intelligence routing for the internet.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#08090b",
+  "theme_color": "#08090b",
+  "orientation": "any",
+  "categories": [
+    "productivity",
+    "business",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/assets/icon.svg?v=4",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

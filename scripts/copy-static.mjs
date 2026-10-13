@@ -12,6 +12,7 @@ for (const [from,to] of [
   ["manifest.webmanifest","public/manifest.webmanifest"],
   ["sw.js","public/sw.js"],
   ["assets/icon.svg","public/assets/icon.svg"],
+  ["assets/jane-wordmark.svg","public/assets/jane-wordmark.svg"],
   ["assets/logo.webp","public/assets/logo.webp"],
   ["assets/e2ee.js","public/assets/e2ee.js"],
   ["assets/voice.js","public/assets/voice.js"],

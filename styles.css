@@ -773,3 +773,8 @@ button {
     color: #fff !important;
   }
 }
+
+/* Jane handwritten brand wordmark replaces the old circular homepage symbol. */
+.brand-mark{width:clamp(66px,6.8vw,80px);height:clamp(45px,4.5vw,54px);flex:0 0 auto;border-radius:0;background:transparent;box-shadow:none}
+.brand-mark img{width:100%;height:100%;object-fit:contain;filter:invert(1) drop-shadow(0 2px 8px rgba(0,0,0,.32))}
+@media(max-width:720px){.brand-mark{width:78px;height:49px}}
